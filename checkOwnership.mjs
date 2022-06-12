@@ -52,13 +52,11 @@ async function getTokenDetails(tokenId, verbose) {
 	const name = u.name || '';
 	const decimals = u.decimals || 0;
 	const tsryAcc = u.treasury_account_id;
-
-	// console.log(Inspect.properties(u));
 	const customFees = u.custom_fees;
-	// console.log(customFees);
+
 	let royaltiesStr = '';
-	if (customFees.royalty_fees !== undefined) {
-		// console.log(customFees);
+	if (customFees.royalty_fees) {
+		if (verbose) console.log(JSON.stringify(customFees, 4));
 		const royalties = customFees.royalty_fees;
 		royalties.forEach((item) => {
 			const numerator = item.amount.numerator;
