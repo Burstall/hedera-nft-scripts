@@ -111,12 +111,18 @@ async function getTokenDetails(tokenId, verbose) {
 }
 
 
-async function getSerialNFTOwnership(tokenId, walletId, name, serialsList, royaltiesStr, tsryAcc, excludeList, verbose) {
+async function getSerialNFTOwnership(tokenId, walletId = null, name, serialsList, royaltiesStr, tsryAcc, excludeList, verbose) {
 	const nftOwnerMap = new Map();
 
 	// base URL
 	const baseUrl = 'https://mainnet-public.mirrornode.hedera.com';
-	let routeUrl = `/api/v1/tokens/${tokenId}/nfts/?limit=100`;
+	let routeUrl;
+	if (walletId) {
+		routeUrl = '/api/v1/tokens/' + tokenId + '/nfts?account.id=' + walletId;
+	}
+	else {
+		routeUrl = `/api/v1/tokens/${tokenId}/nfts/?limit=100`;
+	}
 	if (verbose) { console.log(baseUrl + routeUrl);}
 
 	do {
@@ -237,12 +243,18 @@ async function getSerialNFTOwnershipForAudit(tokenId, serialsList, tsryAct, excl
 	return nftOwnerMap;
 }
 
-async function getSerialFungibleCommonOwnership(tokenId, name, decimals, tsryAcc, excludeList, verbose) {
+async function getSerialFungibleCommonOwnership(tokenId, name, decimals, walletId = null, excludeList, verbose) {
 	const nftOwnerMap = new Map();
 
 	// base URL
 	const baseUrl = 'https://mainnet-public.mirrornode.hedera.com';
-	let routeUrl = `/api/v1/tokens/${tokenId}/balances?limit=100`;
+	let routeUrl;
+	if (walletId) {
+		routeUrl = `/api/v1/tokens/${tokenId}/balances?account.id=${walletId}`;
+	}
+	else {
+		routeUrl = `/api/v1/tokens/${tokenId}/balances?limit=100`;
+	}
 	if (verbose) { console.log(baseUrl + routeUrl);}
 
 	do {
@@ -260,7 +272,7 @@ async function getSerialFungibleCommonOwnership(tokenId, name, decimals, tsryAcc
 			const balance = value.balance * (10 ** -decimals);
 
 
-			nftOwnerMap.set(nftOwner, [balance, `**FC** ${name} -> ${balance.toLocaleString('en-US')} of ${tokenId} tokens **FC**`], nftOwner, tokenId);
+			nftOwnerMap.set(nftOwner, [balance, `**FC** ${name} -> ${balance.toLocaleString('en-US')} of ${tokenId} tokens **FC**`, nftOwner, tokenId]);
 		});
 
 		routeUrl = json.links.next;
@@ -484,7 +496,7 @@ async function main() {
 				return;
 			}
 			// gomint API assumed
-			nftOwnerMap = await getSerialFungibleCommonOwnership(tokenId, returnArray[3], returnArray[4], returnArray[6], excludeList, verbose);
+			nftOwnerMap = await getSerialFungibleCommonOwnership(tokenId, returnArray[3], returnArray[4], walletId, excludeList, verbose);
 		}
 		else if (auditSerialsOutput) {
 			nftOwnerMap = await getSerialNFTOwnershipForAudit(tokenId, serialsList, returnArray[6], excludeList, hodl, epoch, verbose);
