@@ -7,7 +7,7 @@ let serialsCheck = false;
 let imgOnly = false;
 
 // global variable
-const ipfsGateways = ['https://ipfs.eth.aragon.network/ipfs/', 'https://cloudflare-ipfs.com/ipfs/', 'https://ipfs.eternum.io/ipfs/', 'https://cloudflare-ipfs.com/ipfs/', 'https://cloudflare-ipfs.com/ipfs/'];
+const ipfsGateways = ['https://cloudflare-ipfs.com/ipfs/', 'https://ipfs.eternum.io/ipfs/', 'https://ipfs.io/ipfs/', 'https://ipfs.eth.aragon.network/ipfs/'];
 
 const maxRetries = 5;
 
