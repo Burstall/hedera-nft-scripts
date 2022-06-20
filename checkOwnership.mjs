@@ -4,7 +4,7 @@ import * as fs from 'fs';
 const maxRetries = 10;
 const zuseEscrow = '0.0.690356';
 
-const version = '0.2.2';
+const version = '0.2.3';
 
 // TODO: refactor for infinte supply NFTs
 async function fetchJson(url, depth = 0) {
@@ -258,7 +258,7 @@ async function getSerialFungibleCommonOwnership(tokenId, name, decimals, tsryAcc
 			const balance = value.balance * (10 ** -decimals);
 
 
-			nftOwnerMap.set(nftOwner, [balance, `**FC** ${name} -> ${balance.toLocaleString('en-US')} of ${tokenId} tokens **FC**`], nftOwner, tokenId);
+			nftOwnerMap.set(nftOwner, [balance, `**FC** ${name} -> ${balance.toLocaleString('en-US')} of ${tokenId} tokens **FC**`, nftOwner, tokenId]);
 		});
 
 		routeUrl = json.links.next;

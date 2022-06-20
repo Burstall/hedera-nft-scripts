@@ -1,2 +1,5 @@
 node_modules
 .DS_Store
+.env
+auditOuput2*
+test.txt
