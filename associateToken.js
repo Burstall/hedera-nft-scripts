@@ -3,6 +3,8 @@ const {
 } = require('@hashgraph/sdk');
 require('dotenv').config();
 
+const accountTokenOwnershipMap = new Map();
+let verbose = false;
 
 function getArg(arg) {
 	const customIndex = process.argv.indexOf(`-${arg}`);
@@ -85,6 +87,8 @@ async function main() {
 		console.log('Environment required, specify test or main -> run: node associateToken.js -h ');
 		process.exit(1);
 	}
+
+	verbose = getArgFlag('v');
 
 	const force = getArgFlag('force');
 
@@ -181,16 +185,29 @@ async function main() {
 
 	console.log('Running verification:');
 	for (let z = 0; z < checkedTokenList.length; z++) {
-		await checkAccountBalanaces(myAccountId, checkedTokenList[z], client);
+		await checkAccountBalanaces(myAccountId, checkedTokenList[z], client, z ? 0 : true, false);
 	}
 
 	process.exit(0);
 }
 
-async function checkAccountBalanaces(accountId, tokenId, client) {
+async function checkAccountBalanaces(accountId, tokenId, client, force = false) {
+	// Save multiple transactions byt using a Map of existing results
+	// force option to get an update
+	let tokenMap = accountTokenOwnershipMap.get(accountId) || null;
+	if (tokenMap == null || force) {
+		const balanceCheckTx = await new AccountBalanceQuery().setAccountId(accountId).execute(client);
+		tokenMap = balanceCheckTx.tokens._map;
+		console.log(`Found ${tokenMap.size} unquie associated tokens`);
+	}
 
-	const balanceCheckTx = await new AccountBalanceQuery().setAccountId(accountId).execute(client);
-	const ownedBalance = await balanceCheckTx.tokens._map.get(`${tokenId}`) || -1;
+	const ownedBalance = tokenMap.get(`${tokenId}`) || -1;
+
+	if (verbose) {
+		tokenMap.forEach((key, value) => {
+			console.log(key, value);
+		});
+	}
 
 	// console.log(tokenId, balanceCheckTx.tokens);
 	if (ownedBalance < 0) {
