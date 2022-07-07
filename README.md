@@ -55,11 +55,15 @@ Used to create a new fungible token.
 
 Requires:
 .env file (rename .env.example to .env if you like) with the following items (example values can be deleted)
+MY_ACCOUNT_ID=
+MY_PRIVATE_KEY=
 ###Fungible Token Creation###
 TOKEN_NAME=Airdrop Test FT
 TOKEN_SYMBOL=ADTFT
 TOKEN_DECIMALS=6
 TOKEN_INITALSUPPLY=100000
+
+**initial supply is net of the decimal e.g. above supply created is 0.1 ADTFT**
 
 Usage: node createFungibleToken.mjs [-mainnet] [-adminkey] [-freezekey] [-pausekey] [-maxsupply XXX]
        -mainnet         optional - defaults to testnet unless specified
@@ -67,6 +71,21 @@ Usage: node createFungibleToken.mjs [-mainnet] [-adminkey] [-freezekey] [-pausek
        -freezekey       optional - add a freeze key
        -pausekey        optional - add an pause key
        -maxsupply       optional - if used please provide an integer, if omitted then infinite supply assumed
+
+----
+
+Mint additional FT:
+Used to add supply
+
+Requires:
+.env file (rename .env.example to .env if you like) with the following items (example values can be deleted)
+MY_ACCOUNT_ID=
+MY_PRIVATE_KEY=
+###Mint additional Fungible Tokens##
+FT_TOKEN_ID=
+FT_SUPPLY_KEY=
+
+Usage: node mintAdditionalFungibleTokens.mjs [-mainnet] -supply XXX
 
 ----
 
