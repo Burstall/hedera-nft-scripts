@@ -3,3 +3,4 @@ node_modules
 .env
 auditOuput2*
 test.txt
+_*
