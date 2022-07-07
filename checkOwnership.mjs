@@ -3,8 +3,9 @@ import * as fs from 'fs';
 
 const maxRetries = 10;
 const zuseEscrow = '0.0.690356';
+const hashGuildEscrow = '0.0.1007535';
 
-const version = '0.2.3';
+const version = '0.2.5';
 
 // TODO: refactor for infinte supply NFTs
 async function fetchJson(url, depth = 0) {
@@ -139,19 +140,25 @@ async function getSerialNFTOwnership(tokenId, walletId = null, name, serialsList
 					continue;
 				}
 			}
+			// check if serial is deleted
+			if (value.deleted) continue;
+			const spender = value.spender;
+
 			const nftOwner = value.account_id;
 			let nftAcctString = nftOwner;
 			if (excludeList.includes(nftOwner)) { continue; }
 			if (nftOwner == zuseEscrow) {nftAcctString = `ZUSE ESCROW (${zuseEscrow})`;}
-			if (nftOwner == tsryAcc) {nftAcctString = `**TSRY**${tsryAcc}**TSRY**`; }
+			else if (nftOwner == tsryAcc) {nftAcctString = `**TSRY**${tsryAcc}**TSRY**`; }
+			else if (nftOwner == hashGuildEscrow) {nftAcctString = `HashGuild ESCROW (${hashGuildEscrow})`;}
 			let currentOwnership = nftOwnerMap.get(nftOwner) || [];
 
 			if (currentOwnership.length == 0) {
-				currentOwnership = [1, `${name} -> ${tokenId}@${value.serial_number}`, nftAcctString, tokenId, royaltiesStr];
+				currentOwnership = [1, `${name} -> ${tokenId}@${value.serial_number}`, nftAcctString, tokenId, royaltiesStr, spender ? 1 : 0];
 			}
 			else {
 				currentOwnership[0]++;
 				currentOwnership[1] = `${currentOwnership[1]},${value.serial_number}`;
+				if (spender) currentOwnership[5]++;
 
 			}
 			nftOwnerMap.set(nftOwner, currentOwnership);
@@ -208,6 +215,11 @@ async function getSerialNFTOwnershipForAudit(tokenId, serialsList, tsryAct, excl
 				continue;
 			}
 
+			let spender = value.spender;
+
+			if (spender == zuseEscrow) {spender = 'ZUSE LISTING';}
+			else if (spender == hashGuildEscrow) {spender = 'HASHGUILD LISTING';}
+
 			if (hodl) {
 				// also get the HODL date
 				const url = `https://mainnet-public.mirrornode.hedera.com/api/v1/tokens/${tokenId}/nfts/${serial}/transactions?limit=1`;
@@ -227,10 +239,13 @@ async function getSerialNFTOwnershipForAudit(tokenId, serialsList, tsryAct, excl
 				else if (fromAccount == zuseEscrow) {
 					fromAccount = `ZUSE (${zuseEscrow})`;
 				}
-				nftOwnerMap.push([nftOwner, tokenId, serial, fromAccount, hodlDate]);
+				else if (fromAccount == hashGuildEscrow) {
+					fromAccount = `HASHGUILD (${hashGuildEscrow})`;
+				}
+				nftOwnerMap.push([nftOwner, tokenId, serial, spender, fromAccount, hodlDate]);
 			}
 			else {
-				nftOwnerMap.push([nftOwner, tokenId, serial]);
+				nftOwnerMap.push([nftOwner, tokenId, serial, spender]);
 			}
 		}
 
@@ -476,10 +491,10 @@ async function main() {
 	if (auditOutput) { auditCSV = 'Wallet,Token,Owned,Timestamp'; }
 	if (auditSerialsOutput) {
 		if (hodl) {
-			auditCSV = 'Wallet,Token,Serial,From Account,HODL Time,Timestamp';
+			auditCSV = 'Wallet,Token,Serial,SpenderAuthorised,From Account,HODL Time,Timestamp';
 		}
 		else {
-			auditCSV = 'Wallet,Token,Serial,Timestamp';
+			auditCSV = 'Wallet,Token,Serial,SpenderAuthorised,Timestamp';
 		}
 	}
 	for (let i = 0; i < tokenList.length; i++) {
@@ -510,10 +525,10 @@ async function main() {
 			for (let n = 0; n < nftOwnerMap.length; n++) {
 				if (excludeList.includes(nftOwnerMap[n][0])) continue;
 				if (hodl) {
-					auditCSV += `\n${nftOwnerMap[n][0]},${nftOwnerMap[n][1]},${nftOwnerMap[n][2]},${nftOwnerMap[n][3]},${nftOwnerMap[n][4].toISOString()},${startTime.toISOString()}`;
+					auditCSV += `\n${nftOwnerMap[n][0]},${nftOwnerMap[n][1]},${nftOwnerMap[n][2]},${nftOwnerMap[n][3]},${nftOwnerMap[n][4]},${nftOwnerMap[n][5].toISOString()},${startTime.toISOString()}`;
 				}
 				else {
-					auditCSV += `\n${nftOwnerMap[n][0]},${nftOwnerMap[n][1]},${nftOwnerMap[n][2]},${startTime.toISOString()}`;
+					auditCSV += `\n${nftOwnerMap[n][0]},${nftOwnerMap[n][1]},${nftOwnerMap[n][2]},${nftOwnerMap[n][3]},${startTime.toISOString()}`;
 				}
 			}
 		}
@@ -536,10 +551,10 @@ async function main() {
 							wholeWalletUnique++;
 						}
 						if (showRoyalties) {
-							console.log(`Account ${value[2]} owns ${value[0].toLocaleString('en-US')} -> Royalties: ${value[4]} -> ${value[1]}`);
+							console.log(`Account ${value[2]} owns ${value[0].toLocaleString('en-US')} -> Royalties: ${value[4]} -> ${value[1]} [${value[5]} listed / spender authorised]`);
 						}
 						else {
-							console.log(`Account ${value[2]} owns ${value[0].toLocaleString('en-US')} -> ${value[1]}`);
+							console.log(`Account ${value[2]} owns ${value[0].toLocaleString('en-US')} -> ${value[1]} [${value[5]} listed / spender authorised]`);
 						}
 					}
 					else if (wholeWallet) {wholeWalletZeroCollections++;}
