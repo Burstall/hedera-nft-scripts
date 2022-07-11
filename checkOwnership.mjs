@@ -585,9 +585,9 @@ async function main() {
 		}
 		else if (getListedStats) {
 			const [unlistedCount, listedCount, totalNFts] = await getNFTListingStats(tokenId, returnArray[6]);
-			const percListed = listedCount / (unlistedCount, listedCount);
-			const unmintedPerc = 1 - (unlistedCount, listedCount) / totalNFts;
-			console.log(`Stats for ${tokenId}:\n${parseFloat(percListed).toFixed(2) + '%'} listed of ${unlistedCount + listedCount} minted supply.\n${totalNFts} collection size (unminted ${parseFloat(unmintedPerc).toFixed(2) + '%'})`);
+			const percListed = (listedCount / (unlistedCount + listedCount)) * 100;
+			const mintedPerc = ((unlistedCount + listedCount) / totalNFts) * 100;
+			console.log(`Stats for ${tokenId}:\n${parseFloat(percListed).toFixed(3) + '%'}/${listedCount} listed of ${unlistedCount + listedCount} minted supply.\n${totalNFts} collection size (minted ${parseFloat(mintedPerc).toFixed(3) + '%'})`);
 			continue;
 		}
 		else {
