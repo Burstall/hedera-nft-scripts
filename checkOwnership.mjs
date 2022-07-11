@@ -4,10 +4,10 @@ import * as fs from 'fs';
 const maxRetries = 10;
 const zuseEscrow = '0.0.690356';
 const hashGuildEscrow = '0.0.1007535';
+const zuseLaunchpad = '0.0.705448';
 
-const version = '0.2.5';
+const version = '0.2.6';
 
-// TODO: refactor for infinte supply NFTs
 async function fetchJson(url, depth = 0) {
 	if (depth >= maxRetries) return null;
 	depth++;
@@ -178,6 +178,71 @@ async function getSerialNFTOwnership(tokenId, walletId = null, name, serialsList
 	}
 
 	return nftOwnerMap;
+}
+
+async function getNFTListingStats(tokenId, tsryAct, verbose = false) {
+	let listedCount = 0;
+	let unlistedCount = 0;
+	let totalNFts = 0;
+
+	// base URL
+	const baseUrl = 'https://mainnet-public.mirrornode.hedera.com';
+	let routeUrl = `/api/v1/tokens/${tokenId}/nfts/?limit=100`;
+	if (verbose) { console.log(baseUrl + routeUrl);}
+	let batch = 0;
+	do {
+		batch++;
+		const json = await fetchJson(baseUrl + routeUrl);
+		if (json == null) {
+			console.log('FATAL ERROR: no NFTs found', baseUrl + routeUrl);
+			// unlikely to get here but a sensible default
+			return;
+		}
+		const nfts = json.nfts;
+
+		for (let n = 0; n < nfts.length; n++) {
+			console.log(`Batch ${batch} - Processing item:', ${n}, 'of', ${nfts.length}`);
+			totalNFts++;
+			const nft = nfts[n];
+			const serial = nft.serial_number;
+
+			if (nft.deleted) continue;
+			const nftOwner = nft.account_id;
+
+			if (nftOwner == tsryAct || nftOwner == zuseLaunchpad) {
+				if (verbose) {
+					console.log(`Token ${tokenId} / #${serial} remains in treasury/launchpad`);
+				}
+				continue;
+			}
+
+			if (nftOwner == zuseEscrow || nftOwner == hashGuildEscrow) {
+				if (verbose) {
+					console.log(`Token ${tokenId} / #${serial} is listed via escrow`);
+				}
+				listedCount++;
+				continue;
+			}
+
+			const spender = nft.spender;
+
+			if (spender) {
+				if (verbose) {
+					console.log(`Token ${tokenId} / #${serial} is listed via spender authorisation`);
+				}
+				listedCount++;
+				continue;
+			}
+
+			unlistedCount++;
+
+		}
+
+		routeUrl = json.links.next;
+	}
+	while (routeUrl);
+
+	return [unlistedCount, listedCount, totalNFts];
 }
 
 async function getSerialNFTOwnershipForAudit(tokenId, serialsList, tsryAct, excludeList, hodl, epoch, verbose) {
@@ -359,7 +424,7 @@ async function main() {
 
 	const help = getArgFlag('h');
 	if (help) {
-		console.log('Usage: node checkOwnership.mjs [-w <wallet> [-zero]] [-t <token> [-s <serials>] -ex <wallet>] [-r] [-audit] [-auditserials [-hodel [-epoch XXX]]] [-v] [-version]');
+		console.log('Usage: node checkOwnership.mjs [-w <wallet> [-zero]] [-t <token> [-listed] [-s <serials>] -ex <wallet>] [-r] [-audit] [-auditserials [-hodl] [-epoch XXX]]] [-v] [-version]');
 		console.log('       -w <wallet> if not specified will look for all wallets on token');
 		console.log('             -zero  only show zero balances for wallet specified');
 		console.log('       -t <token>  if not specified look for all tokens in given wallet');
@@ -372,6 +437,8 @@ async function main() {
 		console.log('       -auditserials  a simple *serials* ownership audit output - saves to file');
 		console.log('       -hodl       used with auditserials to get hodl data per serial');
 		console.log('       -epoch XXXX used with hodl to exclude anyoe buying post date/time');
+		console.log('       -listed     statistics on listed supply for a token');
+		console.log('       		e.g. node checkOwnership.mjs -t 0.0.XXXX -listed');
 		console.log('       -v          verbose [debug]');
 		console.log('       -version    displays version number and exits');
 		return;
@@ -479,6 +546,8 @@ async function main() {
 		tokenList = [tokenId];
 	}
 
+	const getListedStats = getArgFlag('listed');
+
 
 	let returnArray;
 	let nftOwnerMap;
@@ -513,6 +582,13 @@ async function main() {
 		}
 		else if (auditSerialsOutput) {
 			nftOwnerMap = await getSerialNFTOwnershipForAudit(tokenId, serialsList, returnArray[6], excludeList, hodl, epoch, verbose);
+		}
+		else if (getListedStats) {
+			const [unlistedCount, listedCount, totalNFts] = await getNFTListingStats(tokenId, returnArray[6]);
+			const percListed = listedCount / (unlistedCount, listedCount);
+			const unmintedPerc = 1 - (unlistedCount, listedCount) / totalNFts;
+			console.log(`Stats for ${tokenId}:\n${parseFloat(percListed).toFixed(2) + '%'} listed of ${unlistedCount + listedCount} minted supply.\n${totalNFts} collection size (unminted ${parseFloat(unmintedPerc).toFixed(2) + '%'})`);
+			continue;
 		}
 		else {
 			nftOwnerMap = await getSerialNFTOwnership(tokenId, walletId, returnArray[3], serialsList, returnArray[5], returnArray[6], excludeList, verbose);
