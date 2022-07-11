@@ -198,7 +198,7 @@ async function checkAccountBalanaces(accountId, tokenId, client, force = false) 
 	if (tokenMap == null || force) {
 		const balanceCheckTx = await new AccountBalanceQuery().setAccountId(accountId).execute(client);
 		tokenMap = balanceCheckTx.tokens._map;
-		console.log(`Found ${tokenMap.size} unquie associated tokens`);
+		console.log(`Found ${tokenMap.size} unique associated tokens`);
 	}
 
 	const ownedBalance = tokenMap.get(`${tokenId}`) || -1;
