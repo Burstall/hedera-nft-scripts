@@ -79,8 +79,9 @@ async function main() {
 
 	if (getArgFlag('maxsupply')) {
 		tokenCreateTx.setSupplyType(TokenSupplyType.Finite);
-		const maxSupply = Number(getArg('-maxsupply'));
-		if (isInt(maxSupply)) {
+		const mS = getArg('maxsupply');
+		const maxSupply = Number(mS);
+		if (isInt(mS)) {
 			tokenCreateTx.setMaxSupply = maxSupply;
 		}
 		else {
