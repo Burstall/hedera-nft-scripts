@@ -97,3 +97,20 @@ MY_ACCOUNT_ID=
 MY_PRIVATE_KEY=
 SUPPLY_KEY=
 TOKEN_ID=
+
+----
+
+NFTTransferTwoPKs
+Script to transfer all serials of a given token from one account to another when you have both keys. Useful when sender account is not treasury e.g. from a burner 3rd party account or between wallets you owns. Exposes minimal economics (0.001 per batch of up to 8 NFTs) to cirumvent royalties / fall back fees.
+
+.env file (rename .env.example to .env if you like) with the following items:
+###NFTTransferTwoPKs
+SENDER_ACCOUNT_ID=
+SENDER_PRIVATE_KEY=
+RECEIVE_ACCOUNT_ID=
+RECEIVE_PRIVATE_KEY=
+MEMO='Example Memo'
+##MAIN or TEST environment
+ENVIRONMENT=
+
+Usage: node NFTTransferTwoPKs.mjs -t <token> [-v]
