@@ -15,6 +15,7 @@ const supplyKey = PrivateKey.generate();
 const adminKey = PrivateKey.generate();
 const pauseKey = PrivateKey.generate();
 const freezeKey = PrivateKey.generate();
+const wipeKey = PrivateKey.generate();
 
 function getArg(arg) {
 	const customIndex = process.argv.indexOf(`-${arg}`);
@@ -82,7 +83,8 @@ async function main() {
 		const mS = getArg('maxsupply');
 		const maxSupply = Number(mS);
 		if (isInt(mS)) {
-			tokenCreateTx.setMaxSupply = maxSupply;
+			tokenCreateTx.setMaxSupply(maxSupply);
+			tokenCreateTx.setSupplyType(TokenSupplyType.Finite);
 		}
 		else {
 			console.log(maxSupply, 'must be an integer');
@@ -97,10 +99,12 @@ async function main() {
 	const useFreeze = getArgFlag('freezekey');
 	const usePause = getArgFlag('pausekey');
 	const useAdmin = getArgFlag('adminkey');
+	const useWipe = getArgFlag('wipekey');
 
 	if (useFreeze) tokenCreateTx.setFreezeKey(freezeKey);
 	if (usePause) tokenCreateTx.setPauseKey(pauseKey);
 	if (useAdmin) tokenCreateTx.setAdminKey(adminKey);
+	if (useWipe) tokenCreateTx.setWipeKey(wipeKey);
 
 	tokenCreateTx
 		.setSupplyKey(supplyKey)
@@ -116,6 +120,7 @@ async function main() {
 	if (useAdmin) console.log(`Admin Key: ${adminKey}`);
 	if (usePause) console.log(`Pause Key: ${pauseKey}`);
 	if (useFreeze) console.log(`Freeze Key: ${freezeKey}`);
+	if (useWipe) console.log(`Wipe Key: ${wipeKey}`);
 
 	// BALANCE CHECK
 	const balanceCheckTx = await new AccountBalanceQuery().setAccountId(myAcctID).execute(client);
