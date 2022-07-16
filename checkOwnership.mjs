@@ -5,6 +5,7 @@ const maxRetries = 10;
 const zuseEscrow = '0.0.690356';
 const hashGuildEscrow = '0.0.1007535';
 const zuseLaunchpad = '0.0.705448';
+const hashAxisMint = '0.0.580000';
 
 const version = '0.2.6';
 
@@ -150,6 +151,7 @@ async function getSerialNFTOwnership(tokenId, walletId = null, name, serialsList
 			if (nftOwner == zuseEscrow) {nftAcctString = `ZUSE ESCROW (${zuseEscrow})`;}
 			else if (nftOwner == tsryAcc) {nftAcctString = `**TSRY**${tsryAcc}**TSRY**`; }
 			else if (nftOwner == hashGuildEscrow) {nftAcctString = `HashGuild ESCROW (${hashGuildEscrow})`;}
+			else if (nftOwner == hashAxisMint) {nftAcctString = `HASHAXIS MINT (${hashAxisMint})`;}
 			let currentOwnership = nftOwnerMap.get(nftOwner) || [];
 
 			if (currentOwnership.length == 0) {
@@ -216,7 +218,7 @@ async function getNFTListingStats(tokenId, tsryAct, verbose = false) {
 				continue;
 			}
 
-			if (nftOwner == zuseEscrow || nftOwner == hashGuildEscrow) {
+			if (nftOwner == zuseEscrow || nftOwner == hashGuildEscrow || nftOwner == hashAxisMint) {
 				if (verbose) {
 					console.log(`Token ${tokenId} / #${serial} is listed via escrow`);
 				}
@@ -284,6 +286,7 @@ async function getSerialNFTOwnershipForAudit(tokenId, serialsList, tsryAct, excl
 
 			if (spender == zuseEscrow) {spender = 'ZUSE LISTING';}
 			else if (spender == hashGuildEscrow) {spender = 'HASHGUILD LISTING';}
+			else if (spender == hashAxisMint) {spender = 'HASHAXIS';}
 
 			if (hodl) {
 				// also get the HODL date
@@ -306,6 +309,9 @@ async function getSerialNFTOwnershipForAudit(tokenId, serialsList, tsryAct, excl
 				}
 				else if (fromAccount == hashGuildEscrow) {
 					fromAccount = `HASHGUILD (${hashGuildEscrow})`;
+				}
+				else if (fromAccount == hashAxisMint) {
+					fromAccount = `HASHAXIS (${hashAxisMint})`;
 				}
 				nftOwnerMap.push([nftOwner, tokenId, serial, spender, fromAccount, hodlDate]);
 			}
