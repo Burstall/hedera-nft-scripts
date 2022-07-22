@@ -39,11 +39,6 @@ function getArgFlag(arg) {
 	return false;
 }
 
-function isInt(value) {
-	const x = parseFloat(value);
-	return !isNaN(value) && (x | 0) === x;
-}
-
 async function main() {
 
 	if (getArgFlag('h')) {
@@ -82,7 +77,7 @@ async function main() {
 		tokenCreateTx.setSupplyType(TokenSupplyType.Finite);
 		const mS = getArg('maxsupply');
 		const maxSupply = Number(mS);
-		if (isInt(mS)) {
+		if (Number.isInteger(maxSupply)) {
 			tokenCreateTx.setMaxSupply(maxSupply);
 			tokenCreateTx.setSupplyType(TokenSupplyType.Finite);
 		}
