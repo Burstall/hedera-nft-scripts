@@ -46,8 +46,6 @@ async function main() {
 		console.log('Usage: node associateToken.js -e [test|main] -t <tokenId> -a [ass|dis]');
 		console.log('                -t <tokenId> tokenID or can be , seperated (no spaces)');
 		console.log('                      e.g. 0.0.614759,0.0.614777,0.0.727536');
-		// console.log(`Usage: node associateToken.js -e [test|main] [-t <tokenId>|-l <list>] -a [ass|dis]`);
-		// console.log(`                              [-t <tokenId>|-l <list>] tokenID (can be , seperated) or file containing token per line`);
 		console.log('                -a [ass|dis] associate or disassociate');
 		process.exit(0);
 	}
