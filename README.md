@@ -91,12 +91,37 @@ Usage: node mintAdditionalFungibleTokens.mjs [-mainnet] -supply XXX
 
 Burn NFT
 Simple script to allow the burning of NFTs [when you hold the supply key]
+**N.B. serial must be in treasury account to burn else -? TREASURY_MUST_OWN_BURNED_NFT error**
 
 .env file (rename .env.example to .env if you like) with the following items:
 MY_ACCOUNT_ID=
 MY_PRIVATE_KEY=
+ENVIRONMENT=
 SUPPLY_KEY=
 TOKEN_ID=
+
+Usage: node burnNFT.js -s <serials>
+       -s <serials> burn specified serials
+                    (singular, comma seperated or - for range e.g. 2,5,10 or 1-10)
+
+----
+
+Freeze NFT
+Simple script to freeze a token for an account.
+**Requires FREEZE Key to be set at time of mint**
+
+**This allows the creator to make tokens 'soulbound' as soon as sent then run freezeNFT to make it soulbound**
+
+.env file (rename .env.example to .env if you like) with the following items:
+MY_ACCOUNT_ID=
+MY_PRIVATE_KEY=
+ENVIRONMENT=
+FREEZE_KEY=
+TOKEN_ID=
+
+Usage: node freezeNFT.js -acc <wallet> [-unfreeze]
+           -acc <wallet>  this is the wallet address to free/unfreeze
+           -unfreeze      if specified will unfreeze wallet (default: freeze operation)
 
 ----
 
