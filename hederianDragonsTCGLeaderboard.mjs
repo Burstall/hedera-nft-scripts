@@ -3,9 +3,13 @@ import fetch from 'cross-fetch';
 // exclude (or label?) community wallet
 const excludedWallets = ['0.0.859990'];
 const dragonsTCGTokenId = '0.0.1003996';
+const dragonsNPCTokenId = '0.0.1057949';
 const zuseEscrow = '0.0.690356';
 const hashGuildEscrow = '0.0.1007535';
-const maxRetries = 10;
+const maxRetries = 20;
+const ipfsGateways = ['https://cloudflare-ipfs.com/ipfs/', 'https://ipfs.eth.aragon.network/ipfs/', 'https://ipfs.io/ipfs/', 'https://ipfs.eternum.io/ipfs/', 'https://cloudflare-ipfs.com/ipfs/'];
+const serialNameMap = new Map();
+let totalCompleted = 0;
 let verbose;
 
 async function fetchJson(url, depth = 0) {
@@ -43,18 +47,133 @@ function sleep(ms) {
 	return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function getDragonFromSerial(serial) {
-	const dragonIndex = ((serial - (serial % 10)) / 10) + 1;
-	return 'Dragon' + dragonIndex;
+async function getSerialNFTAttribs(tokenId) {
+	// base URL
+	const baseUrl = 'https://mainnet-public.mirrornode.hedera.com';
+	let routeUrl = `/api/v1/tokens/${tokenId}/nfts/?limit=100`;
+	if (verbose) { console.log(baseUrl + routeUrl);}
+
+	const promisesList = [];
+
+	do {
+		const json = await fetchJson(baseUrl + routeUrl);
+		if (json == null) {
+			console.log('FATAL ERROR: no NFTs found', baseUrl + routeUrl);
+			// unlikely to get here but a sensible default
+			return;
+		}
+		const nfts = json.nfts;
+
+		for (let n = 0; n < nfts.length; n++) {
+			promisesList.push(processNFT(nfts[n]));
+		}
+
+		routeUrl = json.links.next;
+	}
+	while (routeUrl);
+
+	const responseData = await Promise.all(promisesList);
+	for (let r = 0; r < responseData.length; r++) {
+		try {
+			if (responseData[r] === undefined) continue;
+			serialNameMap.set(responseData[r][0], responseData[r][1]);
+		}
+		catch (err) {
+			console.log(`ERROR: element ${r} -> ${responseData[r]}`);
+		}
+	}
 }
 
-async function getUniqueDragonTCGOwnershipMap() {
+async function fetchIPFSJson(ifpsUrl, depth = 0, seed = 0) {
+	if (depth >= maxRetries) return null;
+	if (depth > 15) console.log('Attempt: ', depth);
+	depth = depth + 1;
 
-	const nftOwnerMap = new Map();
+	const url = `${ipfsGateways[seed % ipfsGateways.length]}${ifpsUrl}`;
+	if (verbose) {console.log('Fetch: ', url, depth);}
+	seed += 1;
+	const sleepTime = ((12 * depth ^ 2 * seed) % 100) * (depth % 5);
+	try {
+		const res = await fetchWithTimeout(url);
+		if (res.status != 200) {
+			await sleep(sleepTime);
+			return await fetchIPFSJson(ifpsUrl, depth, seed);
+		}
+		return res.json();
+
+	}
+	catch (err) {
+		if (depth > 8) {
+			if (verbose) {console.error('Caught error when accessing', depth, seed, url, `sleeping for ${sleepTime + 125 * depth}`);}
+			await sleep(sleepTime + 225 * depth);
+		}
+		else {
+			await sleep(sleepTime + 30 * depth);
+		}
+		return await fetchIPFSJson(ifpsUrl, depth, seed);
+	}
+}
+
+async function processNFT(nft) {
+
+	const serialNum = nft.serial_number;
+
+	const deleted = nft.deleted;
+	if (deleted) {
+		console.log(serialNum, 'is deleted - skipping');
+		return;
+	}
+
+	await sleep(21 * serialNum % 1000);
+
+	const metadataString = atob(nft.metadata);
+
+	const ipfsRegEx = /ipfs:?\/\/?(.+)/i;
+	let ipfsString;
+	try {
+		ipfsString = metadataString.match(ipfsRegEx)[1];
+	}
+	catch (_err) {
+		// likely string did not have IPFS in it...default use the whole string
+		ipfsString = metadataString;
+	}
+
+	const metadataJSON = await fetchIPFSJson(ipfsString, 0, serialNum);
+
+	const name = metadataJSON.name;
+
+	totalCompleted++;
+	console.log(`complete: ${serialNum} / ${name} -> now total complete: ${totalCompleted}`);
+
+	return [serialNum, name];
+}
+
+function getDragonFromSerial(tokenId, serial) {
+	switch (tokenId) {
+	case dragonsTCGTokenId:
+		return 'Dragon' + ((serial - (serial % 10)) / 10) + 1;
+	case dragonsNPCTokenId:
+		/*
+		 * Removing hard coding look up to Web 3.0 equiv
+		 *
+		if (serial <= 200) return 'Deliriovirus';
+		else if (serial <= 400) return 'Emezri Blowgun';
+		else if (serial <= 500) return 'Omnikey';
+		else if (serial <= 700) return 'Swevenberry';
+		else if (serial <= 800) return 'Sacrifice';
+		else return 'UKNOWN';
+		*/
+		return serialNameMap.get(serial) || 'UNKNOWN';
+	default:
+		console.log(`Unknown classification for ${tokenId}/#${serial}`);
+	}
+}
+
+async function getUniqueDragonTCGOwnershipMap(tokenId, nftOwnerMap = new Map()) {
 
 	// base URL
 	const baseUrl = 'https://mainnet-public.mirrornode.hedera.com';
-	let routeUrl = `/api/v1/tokens/${dragonsTCGTokenId}/nfts/?limit=100`;
+	let routeUrl = `/api/v1/tokens/${tokenId}/nfts/?limit=100`;
 	if (verbose) { console.log(baseUrl + routeUrl);}
 	let batch = 0;
 	do {
@@ -78,7 +197,7 @@ async function getUniqueDragonTCGOwnershipMap() {
 			if (excludedWallets.includes(nftOwner) || nftOwner == zuseEscrow || nftOwner == hashGuildEscrow) {
 				continue;
 			}
-			const dragonName = getDragonFromSerial(serial);
+			const dragonName = getDragonFromSerial(tokenId, serial);
 			const ownerDragonList = nftOwnerMap.get(nftOwner) || [];
 			if (!ownerDragonList.includes(dragonName)) {
 				ownerDragonList.push(dragonName);
@@ -90,14 +209,24 @@ async function getUniqueDragonTCGOwnershipMap() {
 	}
 	while (routeUrl);
 
+
 	return nftOwnerMap;
 }
 
 async function main() {
 	verbose = false;
+	// parse token for serial / name pairing [on non dragon TC tokens]
+	console.log('Processing non-dragon card metadata...');
+	await getSerialNFTAttribs(dragonsNPCTokenId);
+	console.log('**COMPLETE**');
 	// get a map of owners per serial
-	const nftOwnerMap = await getUniqueDragonTCGOwnershipMap();
+	console.log('Parsing ownership of Dragon TCs');
+	let nftOwnerMap = await getUniqueDragonTCGOwnershipMap(dragonsTCGTokenId);
+	console.log('Parsing ownership of non-dragon TCs');
+	nftOwnerMap = await getUniqueDragonTCGOwnershipMap(dragonsNPCTokenId, nftOwnerMap);
+	console.log('**COMPLETE**');
 
+	console.log('Preparing Leaderboard');
 	const nftOwnerList = [];
 	nftOwnerMap.forEach((value, key) => {
 		nftOwnerList.push([key, value.length]);
