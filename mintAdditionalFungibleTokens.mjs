@@ -33,10 +33,6 @@ function getArgFlag(arg) {
 	return false;
 }
 
-function isInt(value) {
-	const x = parseFloat(value);
-	return !isNaN(value) && (x | 0) === x;
-}
 
 async function main() {
 
@@ -57,8 +53,8 @@ async function main() {
 	}
 	let supply = 0;
 	if (getArgFlag('supply')) {
-		supply = getArg('supply');
-		if (!isInt(supply)) {
+		supply = Number(getArg('supply'));
+		if (!Number.isInteger(supply)) {
 			console.log('-supply need an integer argument..exiting');
 			return;
 		}
