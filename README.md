@@ -147,7 +147,7 @@ Usage: node NFTTransferTwoPKs.mjs -t <token> [-v]
 ----
 
 updatePrivateKey
-Script to update the Private Key on an account. Hopefully you do not need to this very often but if/when you do good ot have in your toolbox. I would encoruage people to try it on a testnet account first just to ensure you are familiar and to use the -test argument [this does everythign except try to update it on Hedera side so you can see how it works.]
+Script to update the Private Key on an account. Hopefully you do not need to do this very often but if/when you do, good to have in your toolbox. I would encoruage people to try it on a testnet account first just to ensure you are familiar and to use the -test argument [this does everything except try to update it on Hedera side so you can see how it works.]
 
 **Reminder: whenever new scripts appear good to run 'npm install' to ensure all prequesite libraries are installed.**
 
@@ -163,7 +163,7 @@ OLD_KEY=
 
 **UPDATE_ACCT= and OLD_KEY= can be left empty and you may supply them as arguments: node updatePrivateKey.js -acc 0.0.222 -pk 302XXXXXXXXXXXXXXXXX3C**
 
-**The script does not force you to save to a file but this is safest, use -save to output the new key to a file you can use -save <filename> to overide the name of the file. If you do not it will ask you for input one last time regarding saving so do nto be suprised**
+**The script does not force you to save to a file but this is safest, use -save to output the new key to a file you can use -save to overide the name of the file. If you do not it will ask you for input one last time regarding saving so do not be surprised**
 
 Usage: Usage: node updatePrivateKey.js [-acc <account>] [-pk <private key>] [-save [<file-name>]] [-test]
        -acc <account>           supply account to reset on commandline
