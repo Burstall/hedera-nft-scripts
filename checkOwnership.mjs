@@ -653,7 +653,7 @@ async function main() {
 	}
 
 	if (auditOutput || auditSerialsOutput) {
-		const timestamp = startTime.toISOString().split('.')[0].replace(':', '-');
+		const timestamp = startTime.toISOString().split('.')[0].replaceAll(':', '-');
 		fs.writeFile(`./auditOuput${timestamp}.csv`, auditCSV, () => {
 			console.log('Audit File created');
 		});
