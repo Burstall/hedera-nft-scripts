@@ -182,6 +182,43 @@ async function getSerialNFTOwnership(tokenId, walletId = null, name, serialsList
 	return nftOwnerMap;
 }
 
+async function getAssociatedButZeroAccounts(tokenId, excludeList, tsryAcc) {
+	const nftOwnerList = [];
+
+	// base URL
+	const baseUrl = 'https://mainnet-public.mirrornode.hedera.com';
+	let routeUrl = `/api/v1/tokens/${tokenId}/balances/?limit=100`;
+
+	do {
+		const json = await fetchJson(baseUrl + routeUrl);
+		if (json == null) {
+			console.log('FATAL ERROR: no NFTs found', baseUrl + routeUrl);
+			// unlikely to get here but a sensible default
+			return;
+		}
+		const balances = json.balances;
+
+		for (let n = 0; n < balances.length; n++) {
+			const balanceObj = balances[n];
+			let account = balanceObj.account;
+			const balance = balanceObj.balance;
+
+			if (excludeList.includes(account)) { continue; }
+			if (account == zuseEscrow) {account = `ZUSE ESCROW (${zuseEscrow})`;}
+			else if (account == tsryAcc) {account = `**TSRY**${tsryAcc}**TSRY**`; }
+			else if (account == hashGuildEscrow) {account = `HashGuild ESCROW (${hashGuildEscrow})`;}
+			else if (account == hashAxisMint) {account = `HASHAXIS MINT (${hashAxisMint})`;}
+
+			if (balance == 0) nftOwnerList.push(account);
+		}
+
+		routeUrl = json.links.next;
+	}
+	while (routeUrl);
+
+	return nftOwnerList;
+}
+
 async function getNFTListingStats(tokenId, tsryAct, verbose = false) {
 	let listedCount = 0;
 	let unlistedCount = 0;
@@ -430,10 +467,11 @@ async function main() {
 
 	const help = getArgFlag('h');
 	if (help) {
-		console.log('Usage: node checkOwnership.mjs [-w <wallet> [-zero]] [-t <token> [-listed] [-s <serials>] -ex <wallet>] [-r] [-audit] [-auditserials [-hodl] [-epoch XXX]]] [-v] [-version]');
+		console.log('Usage: node checkOwnership.mjs [-w <wallet> [-zero]] [-t <token> [-zero] [-listed] [-s <serials>] -ex <wallet>] [-r] [-audit] [-auditserials [-hodl] [-epoch XXX]]] [-v] [-version]');
 		console.log('       -w <wallet> if not specified will look for all wallets on token');
 		console.log('             -zero  only show zero balances for wallet specified');
 		console.log('       -t <token>  if not specified look for all tokens in given wallet');
+		console.log('             -zero  only show wallet with 0 balance ready for airdrop');
 		console.log('       -ex <wallet> 0.0.XXXX,0.0.YYYY to exclude wallets from display');
 		console.log('       -threshold   minimum ownership [default: 1]');
 		console.log('       -r          show token royalties');
@@ -595,6 +633,16 @@ async function main() {
 			const mintedPerc = ((unlistedCount + listedCount) / totalNFts) * 100;
 			console.log(`Stats for ${tokenId}:\n${parseFloat(percListed).toFixed(3) + '%'}/${listedCount} listed of ${unlistedCount + listedCount} minted supply.\n${totalNFts} collection size (minted ${parseFloat(mintedPerc).toFixed(3) + '%'})`);
 			continue;
+		}
+		else if (!wholeWallet && getZeroFlag) {
+			// output a list of accounts with the token associated but 0 balance
+			getAssociatedButZeroAccounts(tokenId, excludeList, returnArray[5]).then((acctList) => {
+				console.log('Airdrop script format');
+				for (let a = 0; a < acctList.length; a++) {
+					console.log(`${tokenId},${acctList[a]},1,0`);
+				}
+			});
+			return;
 		}
 		else {
 			nftOwnerMap = await getSerialNFTOwnership(tokenId, walletId, returnArray[3], serialsList, returnArray[5], returnArray[6], excludeList, verbose);
