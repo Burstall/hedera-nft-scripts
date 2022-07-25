@@ -639,7 +639,7 @@ async function main() {
 			getAssociatedButZeroAccounts(tokenId, excludeList, returnArray[5]).then((acctList) => {
 				console.log('Airdrop script format');
 				for (let a = 0; a < acctList.length; a++) {
-					console.log(`${tokenId},${acctList[a]},1,0`);
+					console.log(`${acctList[a]},${tokenId},1,0`);
 				}
 			});
 			return;
