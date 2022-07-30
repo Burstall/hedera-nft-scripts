@@ -91,8 +91,26 @@ async function main() {
 		return;
 	}
 
+	const batchSize = 10;
+
+	console.log(`Burning ${serialsList.length} tokens in batches of ${batchSize}`);
+
 	client.setOperator(operatorId, operatorKey);
 
+	const promiseArray = [];
+	let batchNum = 0;
+	for (let b = 0; b < serialsList.length; b = b + batchSize) {
+		batchNum++;
+		promiseArray.push(processSerials(tokenId, serialsList.slice(b, b + batchSize), client, batchNum));
+	}
+
+	await Promise.all(promiseArray);
+
+	console.log('Burn complete');
+}
+
+async function processSerials(tokenId, serialsList, client, batchNum) {
+	console.log('Processing batch', batchNum);
 	const transaction = new TokenBurnTransaction()
 		.setTokenId(tokenId)
 		.setSerials(serialsList)
@@ -110,8 +128,7 @@ async function main() {
 	// Get the transaction consensus status
 	const transactionStatus = receipt.status;
 
-	console.log('The transaction consensus status ' + transactionStatus.toString());
-
+	console.log('Batch' + batchNum + ' complete. The transaction consensus status ' + transactionStatus.toString());
 }
 
 main();
