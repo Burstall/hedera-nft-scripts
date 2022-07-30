@@ -137,6 +137,19 @@ async function fetchWithTimeout(resource, options = {}) {
 	return response;
 }
 
+async function executeTransaction(signedTx, client, batchNum) {
+	console.log(`(Batch #${batchNum}) Tx being sent.`);
+	try {
+		const tokenTransferSubmit = await signedTx.execute(client);
+		// check it worked
+		const tokenTransferRx = await tokenTransferSubmit.getReceipt(client);
+		console.log(`(Batch #${batchNum}) Tx processed - status:`, tokenTransferRx.status.toString());
+	}
+	catch (err) {
+		console.log('Error occured executing tx:', err);
+	}
+}
+
 async function main() {
 	if (getArgFlag('h')) {
 		console.log('Usage: node NFTTransferTwoPKs.mjs -t <token> [-v]');
@@ -212,8 +225,15 @@ async function main() {
 
 	const tokenIdFromString = TokenId.fromString(tokenId);
 
+	const recActBalQueryPreTx = await new AccountBalanceQuery()
+		.setAccountId(recAccountId)
+		.execute(client);
+
+	const recActBalPreTx = recActBalQueryPreTx.tokens._map.get(tokenId.toString());
+
 	// check association to other account
-	if (!tokenBalMap.get(recAccountId)) {
+	// check mirror node and live network call
+	if (!tokenBalMap.get(recAccountId) && recActBalPreTx < 0) {
 		console.log(`- ${recAccountId} needs to associate NFT with ID ${tokenId}`);
 
 		// associate
@@ -245,7 +265,11 @@ async function main() {
 	// process easch instruction seperately to ensure success/failure lines up (less efficient of course).
 	// more important for NFTs given unique...FT can aggregate.
 
+	const promiseArray = [];
+	let txCount = 0;
+
 	for (let outer = 0; outer < serialList.length; outer += nftBatchSize) {
+		txCount++;
 		const tokenTransferTx = new TransferTransaction();
 		for (let inner = 0; (inner < nftBatchSize) && ((outer + inner) < serialList.length); inner++) {
 			const serial = serialList[outer + inner];
@@ -264,16 +288,10 @@ async function main() {
 		let signedTx = await tokenTransferTx.sign(senderPK);
 		signedTx = await tokenTransferTx.sign(recPrivateKey);
 		// submit
-		try {
-			const tokenTransferSubmit = await signedTx.execute(client);
-			// check it worked
-			const tokenTransferRx = await tokenTransferSubmit.getReceipt(client);
-			console.log('Tx processed - status:', tokenTransferRx.status.toString());
-		}
-		catch (err) {
-			console.log('Error occured executing tx:', err);
-		}
+		promiseArray.push(executeTransaction(signedTx, client, txCount));
 	}
+
+	await Promise.all(promiseArray);
 
 	// check balances on all accounts
 	const senderActBal = await new AccountBalanceQuery()
