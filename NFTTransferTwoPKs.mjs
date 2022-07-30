@@ -233,7 +233,7 @@ async function main() {
 
 	// check association to other account
 	// check mirror node and live network call
-	if (!tokenBalMap.get(recAccountId) && recActBalPreTx < 0) {
+	if (!tokenBalMap.get(recAccountId) && !recActBalPreTx) {
 		console.log(`- ${recAccountId} needs to associate NFT with ID ${tokenId}`);
 
 		// associate
