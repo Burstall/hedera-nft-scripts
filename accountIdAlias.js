@@ -40,7 +40,7 @@ async function main() {
 		accountId = AccountId.fromString(getArg('string'));
 	}
 	else if (getArgFlag('solidity')) {
-		accountId = AccountId.fromSolidityAddress(getArg('string'));
+		accountId = AccountId.fromSolidityAddress(getArg('solidity'));
 	}
 
 	console.log('Account: ' + accountId.toString() +
