@@ -671,7 +671,7 @@ async function main() {
 				// requested simple audit output -> Wallet ID, token ID, count
 				if (auditOutput) {
 					if (value[0] > 0) {
-						auditCSV += `\n${key},${value[3]},${value[0]},${startTime.toISOString()}`;
+						auditCSV += `\n${value[2]},${value[3]},${value[0]},${startTime.toISOString()}`;
 					}
 				}
 				else if (printAllOwners || key == walletId || serialsCheck) {
