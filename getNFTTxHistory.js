@@ -13,6 +13,7 @@ const txsUrl = '/api/v1/transactions/';
 let verbose = false;
 let outputAsFile = true;
 const addressRegex = /(0\.0\.[1-9][0-9]+)/i;
+const rpsThreshold = 95;
 let threshold = 1;
 
 function getArg(arg) {
@@ -160,6 +161,7 @@ async function main() {
 	const promiseList = [];
 	for (let s = 0; s < serialsList.length; s++) {
 		promiseList.push(pullNFTTxHistory(tokenId, serialsList[s]));
+		if (s % rpsThreshold == 0) await sleep(1000);
 	}
 
 	// get unique list of Tx Ids
@@ -186,6 +188,7 @@ async function main() {
 	const txPromiseList = [];
 	for (let t = 0; t < txList.length; t++) {
 		txPromiseList.push(getTransactionObject(txList[t], t));
+		if (t % rpsThreshold == 0) await sleep(1000);
 	}
 
 	const txObjMap = new Map();
