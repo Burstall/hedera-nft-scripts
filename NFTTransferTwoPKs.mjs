@@ -155,6 +155,9 @@ async function main() {
 		console.log('Usage: node NFTTransferTwoPKs.mjs -t <token> [-v]');
 		console.log('Designed to move **ALL** of a token from one account to another when you have both keys');
 		console.log('       -t token		the token to move');
+		console.log('       -s <serials>    transgfer specific serial(s)');
+		console.log('             (comma seperated or - for range e.g. 2,5,10 or 1-10)');
+		console.log('       -r X            transfer a random X serials');
 		console.log('       -v          		verbose [debug]');
 		return;
 	}
@@ -201,9 +204,65 @@ async function main() {
 
 	let tokenBalMap = await getTokenBalanceMap(tokenId);
 
-	const serialList = await getSerialsOwned(tokenId, senderAcctId);
+	let requestedSerialsList = [];
+	if (getArgFlag('s')) {
+		const serialsArg = getArg('s');
 
-	console.log(`Found ${serialList.length} serials on account ${senderAcctId}`);
+		// format csv or '-' for range
+		if (serialsArg.includes('-')) {
+			// inclusive range
+			const rangeSplit = serialsArg.split('-');
+			for (let i = rangeSplit[0]; i <= rangeSplit[1]; i++) {
+				requestedSerialsList.push(`${i}`);
+			}
+		}
+		else if (serialsArg.includes(',')) {
+			requestedSerialsList = serialsArg.split(',');
+		}
+		else {
+			// only one serial to check
+			requestedSerialsList = [serialsArg];
+		}
+
+	}
+
+	const ownedSerialsList = await getSerialsOwned(tokenId, senderAcctId);
+
+	console.log(`Found ${ownedSerialsList.length} serials on account ${senderAcctId}`);
+
+	let selectedSerialsList = [];
+
+	if (getArgFlag('r')) {
+		const randSize = Number(getArg('r'));
+		if (randSize > ownedSerialsList.length) {
+			console.log('Requested more random serials than owned - exiting');
+			console.log('REQUESTED:', randSize);
+			console.log('OWNED:', ownedSerialsList.length);
+			process.exit(1);
+		}
+		const shuffledSerials = shuffleArray(ownedSerialsList);
+		selectedSerialsList = shuffledSerials.slice(0, randSize);
+		console.log(`Sending ${selectedSerialsList.length} serials **RANDOMLY PICKED**`, selectedSerialsList);
+
+	}
+	else if (requestedSerialsList.length > 0) {
+		// check the requested serials are owned
+		if (requestedSerialsList.every(elem => ownedSerialsList.includes(elem))) {
+			console.log(`Sending ${requestedSerialsList.length} serials`, requestedSerialsList);
+			selectedSerialsList = ownedSerialsList;
+		}
+		else {
+			console.log('Sending account does not own all serials specified -- exiting');
+			console.log('REQUESTED:', requestedSerialsList);
+			console.log('OWNED:', ownedSerialsList);
+			process.exit(1);
+		}
+	}
+	else {
+		// all
+		selectedSerialsList = ownedSerialsList;
+		console.log('Sending **ALL** serials');
+	}
 
 	// Create our connection to the Hedera network
 	let client;
@@ -268,11 +327,11 @@ async function main() {
 	const promiseArray = [];
 	let txCount = 0;
 
-	for (let outer = 0; outer < serialList.length; outer += nftBatchSize) {
+	for (let outer = 0; outer < selectedSerialsList.length; outer += nftBatchSize) {
 		txCount++;
 		const tokenTransferTx = new TransferTransaction();
-		for (let inner = 0; (inner < nftBatchSize) && ((outer + inner) < serialList.length); inner++) {
-			const serial = serialList[outer + inner];
+		for (let inner = 0; (inner < nftBatchSize) && ((outer + inner) < selectedSerialsList.length); inner++) {
+			const serial = selectedSerialsList[outer + inner];
 			tokenTransferTx.addNftTransfer(tokenIdFromString, serial, senderAccountIdFromString, recAccountIdFromString);
 			if (verbose) console.log(`Adding serial ${serial} of ${tokenId} to tx to send to ${recAccountId} from ${senderAcctId}`);
 		}
@@ -308,6 +367,15 @@ async function main() {
 	console.log(`- ${recAccountId} balance: ${recActBal.tokens._map.get(tokenId.toString())} NFT(s) [network] / ${tokenBalMap.get(recAccountId)} [mirror nodes] of ID ${tokenId}`);
 	console.log('Receiver HBAR balance is: ' + recActBal.hbars);
 
+}
+
+
+function shuffleArray(arr) {
+	for (let i = arr.length - 1; i > 0; i--) {
+		const j = Math.floor(Math.random() * (i + 1));
+		[arr[i], arr[j]] = [arr[j], arr[i]];
+	}
+	return arr;
 }
 
 main();
