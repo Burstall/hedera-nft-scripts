@@ -5,6 +5,7 @@ let verbose = false;
 let testnet = false;
 let serialsCheck = false;
 let imgOnly = false;
+let scrapeOutput = false;
 
 // global variable
 const ipfsGateways = ['https://cloudflare-ipfs.com/ipfs/', 'https://ipfs.eternum.io/ipfs/', 'https://ipfs.io/ipfs/', 'https://ipfs.eth.aragon.network/ipfs/'];
@@ -177,6 +178,13 @@ async function getNFTSerialMetadata(url) {
 		metadataJSON.attributes.forEach((item) => {
 			attribs += `\n${item.trait_type} = ${item.value}`;
 		});
+
+		if (scrapeOutput) {
+			attribs += '\n=========';
+			metadataJSON.attributes.forEach((item) => {
+				attribs += `\nattribIndex.set('${item.trait_type.toLowerCase()}', ++attIdx);`;
+			});
+		}
 	}
 	catch {
 		// if no attributes
@@ -285,6 +293,8 @@ async function main() {
 	testnet = getArgFlag('testnet');
 
 	imgOnly = getArgFlag('img');
+
+	scrapeOutput = getArgFlag('scrape');
 
 	const serialsArg = getArg('s');
 	let serialsList = [];
