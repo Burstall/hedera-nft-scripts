@@ -144,7 +144,7 @@ async function main() {
 
 	// Create our connection to the Hedera network
 	let client;
-	if (env == 'main') {
+	if (env.toLowerCase() == 'main') {
 		client = Client.forMainnet().setOperator(
 			myAccountId,
 			myPrivateKey,
@@ -152,7 +152,7 @@ async function main() {
 
 		env = 'MAIN';
 	}
-	else if (env == 'test') {
+	else if (env.toLowerCase() == 'test') {
 		client = Client.forTestnet().setOperator(
 			myAccountId,
 			myPrivateKey,
