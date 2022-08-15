@@ -152,7 +152,7 @@ async function executeTransaction(signedTx, client, batchNum) {
 
 async function main() {
 	if (getArgFlag('h')) {
-		console.log('Usage: node NFTTransferTwoPKs.mjs -t <token> [-v]');
+		console.log('Usage: node NFTTransferTwoPKs.mjs -t <token> [-s <serials> | -r X] [-v]');
 		console.log('Designed to move **ALL** of a token from one account to another when you have both keys');
 		console.log('       -t token		the token to move');
 		console.log('       -s <serials>    transgfer specific serial(s)');
