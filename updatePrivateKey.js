@@ -148,7 +148,9 @@ async function main() {
 							+ '\nMnemonic:\n'
 							+ mnemonic.toString()
 							+ '\nNew Private Key:\n'
-							+ newKey.toString();
+							+ newKey.toString()
+							+ '\nNew Public Key:\n'
+							+ newKey.publicKey;
 
 	if (save) {
 		// write to the filename specified
