@@ -3,4 +3,7 @@ node_modules
 .env
 auditOuput2*
 test.txt
+0.0.*
 _*
+walletOwnership.csv
+tokenFlatFileDB*
