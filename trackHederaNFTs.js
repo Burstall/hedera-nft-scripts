@@ -151,7 +151,7 @@ async function getTokenStats(tokenId) {
 	// symbol
 	// treasury
 
-	tokenFlatFileDB.push(`\n${tokenId}$${delim}${name}${delim}${supply}${delim}${mS}${delim}${royaltiesBool}${delim}${fbfBool}${delim}${royaltiesStr}${delim}${symbol}${delim}${tsryAcc}`);
+	tokenFlatFileDB.push(`\n${tokenId}${delim}${name}${delim}${supply}${delim}${mS}${delim}${royaltiesBool}${delim}${fbfBool}${delim}${royaltiesStr}${delim}${symbol}${delim}${tsryAcc}`);
 }
 
 async function getOwners(tokenId) {
