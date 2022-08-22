@@ -2,6 +2,49 @@ const {
 	Client, PrivateKey, AccountBalanceQuery, TokenAssociateTransaction, TokenDissociateTransaction, TokenId,
 } = require('@hashgraph/sdk');
 require('dotenv').config();
+const fetch = require('cross-fetch');
+
+const baseUrlForMainnet = 'https://mainnet-public.mirrornode.hedera.com';
+const baseUrlForTestnet = 'http://testnet.mirrornode.hedera.com';
+const maxRetries = 3;
+let env;
+
+
+async function getTokenBalanceMap(tokenId) {
+
+	let routeUrl = '/api/v1/tokens/' + tokenId + '/balances/';
+	const baseUrl = env == 'MAIN' ? baseUrlForMainnet : baseUrlForTestnet;
+	const tokenBalMap = new Map();
+	try {
+		do {
+			if (verbose) console.log(baseUrl + routeUrl);
+			const json = await fetchJson(baseUrl + routeUrl);
+			if (json == null) {
+				console.log('FATAL ERROR: no NFTs found', baseUrl + routeUrl);
+				// unlikely to get here but a sensible default
+				return;
+			}
+
+			for (let b = 0 ; b < json.balances.length; b++) {
+				const entry = json.balances[b];
+				const account = entry.account;
+				const balance = entry.balance;
+
+				tokenBalMap.set(account, balance);
+			}
+
+			routeUrl = json.links.next;
+		}
+		while (routeUrl);
+		if (verbose) console.log(tokenBalMap);
+		return tokenBalMap;
+	}
+	catch (err) {
+		console.log('Trying to find balances for', tokenId, baseUrl, routeUrl);
+		console.error(err);
+		process.exit(1);
+	}
+}
 
 const accountTokenOwnershipMap = new Map();
 let verbose = false;
@@ -80,7 +123,7 @@ async function main() {
 		process.exit(1);
 	}
 
-	const env = getArg('e');
+	env = getArg('e');
 	if (env === undefined) {
 		console.log('Environment required, specify test or main -> run: node associateToken.js -h ');
 		process.exit(1);
@@ -106,12 +149,16 @@ async function main() {
 			myAccountId,
 			myPrivateKey,
 		);
+
+		env = 'MAIN';
 	}
 	else if (env.toLowerCase() == 'test') {
 		client = Client.forTestnet().setOperator(
 			myAccountId,
 			myPrivateKey,
 		);
+
+		env = 'TEST';
 	}
 	else {
 		console.log('must specify -e with \'test\' or \'main\' -- no quotes!');
@@ -127,7 +174,7 @@ async function main() {
 		console.log(`pre-check: ${tokenIdFromString}`);
 
 		//* *CHARGEABLE** consider moving to mirror nodes
-		const ownedBalance = await checkAccountBalanaces(myAccountId, tokenIdFromString, client);
+		const [ownedBalance, mirrorNodeOwnedBalance] = await checkAccountBalances(myAccountId, tokenIdFromString, client);
 		if (associate) {
 			if (ownedBalance >= 0) {
 				// already countAssociated
@@ -138,7 +185,7 @@ async function main() {
 				checkedTokenList.push(tokenIdFromString);
 			}
 		}
-		else if (ownedBalance < 0) {
+		else if (ownedBalance < 0 && mirrorNodeOwnedBalance < 0) {
 			// already countAssociated
 			console.log(`Skipping: ${myAccountId} already has ${tokenIdFromString} DISassociated`);
 			continue;
@@ -183,16 +230,17 @@ async function main() {
 
 	console.log('Running verification:');
 	for (let z = 0; z < checkedTokenList.length; z++) {
-		await checkAccountBalanaces(myAccountId, checkedTokenList[z], client, z ? 0 : true, false);
+		await checkAccountBalances(myAccountId, checkedTokenList[z], client, z ? 0 : true, false);
 	}
 
 	process.exit(0);
 }
 
-async function checkAccountBalanaces(accountId, tokenId, client, force = false) {
+async function checkAccountBalances(accountId, tokenId, client, force = false) {
 	// Save multiple transactions byt using a Map of existing results
 	// force option to get an update
 	let tokenMap = accountTokenOwnershipMap.get(accountId) || null;
+	const mirrorNodeTokenBalMap = await getTokenBalanceMap(tokenId);
 	if (tokenMap == null || force) {
 		const balanceCheckTx = await new AccountBalanceQuery().setAccountId(accountId).execute(client);
 		tokenMap = balanceCheckTx.tokens._map;
@@ -200,6 +248,7 @@ async function checkAccountBalanaces(accountId, tokenId, client, force = false) 
 	}
 
 	const ownedBalance = tokenMap.get(`${tokenId}`) || -1;
+	const mirrorNodeOwnedBalance = mirrorNodeTokenBalMap.get(`${accountId}`);
 
 	if (verbose) {
 		tokenMap.forEach((key, value) => {
@@ -209,12 +258,55 @@ async function checkAccountBalanaces(accountId, tokenId, client, force = false) 
 
 	// console.log(tokenId, balanceCheckTx.tokens);
 	if (ownedBalance < 0) {
-		console.log(`- ${accountId} does not have ${tokenId} associated`);
+		console.log(`- NETWORK ${accountId} does not have ${tokenId} associated`);
 	}
 	else {
-		console.log(`- ${accountId} balance: ${ownedBalance} NFT(s) of ID ${tokenId}`);
+		console.log(`- NETWORK ${accountId} balance: ${ownedBalance} NFT(s) of ID ${tokenId}`);
 	}
-	return ownedBalance;
+
+	if (mirrorNodeOwnedBalance < 0) {
+		console.log(`- MIRROR NODE ${accountId} does not have ${tokenId} associated`);
+	}
+	else {
+		console.log(`- MIRROR NODE ${accountId} balance: ${mirrorNodeOwnedBalance} NFT(s) of ID ${tokenId}`);
+	}
+	return [ownedBalance, mirrorNodeOwnedBalance];
+}
+
+async function fetchJson(url, depth = 0) {
+
+	if (depth >= maxRetries) return null;
+	depth++;
+	try {
+		const res = await fetchWithTimeout(url);
+		if (res.status != 200) {
+			await sleep(500 * depth);
+			return await fetchJson(url, depth);
+		}
+		return res.json();
+
+	}
+	catch (err) {
+		await sleep(500 * depth);
+		return await fetchJson(url, depth);
+	}
+}
+
+async function fetchWithTimeout(resource, options = {}) {
+	const { timeout = 5000 } = options;
+
+	const controller = new AbortController();
+	const id = setTimeout(() => controller.abort(), timeout);
+	const response = await fetch(resource, {
+		...options,
+		signal: controller.signal,
+	});
+	clearTimeout(id);
+	return response;
+}
+
+function sleep(ms) {
+	return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 main();

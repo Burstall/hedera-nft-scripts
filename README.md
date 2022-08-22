@@ -110,6 +110,22 @@ Usage: node burnNFT.js -s <serials>
 
 ----
 
+Burn FT
+Simple script to allow the burning of FTs [when you hold the supply key]
+**N.B. supply must be in treasury account to burn**
+
+.env file (rename .env.example to .env if you like) with the following items:
+MY_ACCOUNT_ID=
+MY_PRIVATE_KEY=
+ENVIRONMENT=
+SUPPLY_KEY=
+TOKEN_ID=
+
+Usage: node burnFT.js -amt XXX
+       -amt     XXXX to burn
+					
+----
+
 Freeze NFT
 Simple script to freeze a token for an account.
 **Requires FREEZE Key to be set at time of mint**
@@ -175,3 +191,11 @@ Usage: Usage: node updatePrivateKey.js [-acc <account>] [-pk <private key>] [-sa
        -save <filename> to specify the file to save to
        -test                            run script without changing key
         **Changing keys is scary - this lets you be double sure connfig looks right**
+
+---
+
+trackHederaNFTs.js
+
+Scans for **ALL** NFTs on the network and tracks which wallets own what balances. Used to try and assess number of users / collectors on the network through time. It's not fast but it does keep you updated on progress.
+
+Usage: node trackHederaNFTs.js
