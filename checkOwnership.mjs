@@ -314,10 +314,14 @@ async function getSerialNFTOwnershipForAudit(tokenId, serialsList, tsryAct, excl
 			}
 
 			if (value.deleted) continue;
-			const nftOwner = value.account_id;
+			let nftOwner = value.account_id;
 			if (excludeList.includes(nftOwner)) {
 				continue;
 			}
+
+			if (nftOwner == zuseEscrow) {nftOwner = 'ZUSE LISTING';}
+			else if (nftOwner == hashGuildEscrow) {nftOwner = 'HASHGUILD LISTING';}
+			else if (nftOwner == hashAxisMint) {nftOwner = 'HASHAXIS';}
 
 			let spender = value.spender;
 
