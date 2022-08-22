@@ -616,7 +616,17 @@ async function main() {
 		if (verbose) {console.log(`processing token: ${tokenId}`);}
 		returnArray = await getTokenDetails(tokenId, verbose);
 
-		if (returnArray[1] == 'FUNGIBLE_COMMON') {
+		if (!wholeWallet && getZeroFlag) {
+			// output a list of accounts with the token associated but 0 balance
+			getAssociatedButZeroAccounts(tokenId, excludeList, returnArray[5]).then((acctList) => {
+				console.log('Airdrop script format');
+				for (let a = 0; a < acctList.length; a++) {
+					console.log(`${acctList[a]},${tokenId},1,0`);
+				}
+			});
+			return;
+		}
+		else if (returnArray[1] == 'FUNGIBLE_COMMON') {
 			if (serialsCheck) {
 				console.log(`**CAN ONLY CHECK SERIALS for type NFT - ${tokenId} is of type FUNGIBLE_COMMON`);
 				return;
@@ -633,16 +643,6 @@ async function main() {
 			const mintedPerc = ((unlistedCount + listedCount) / totalNFts) * 100;
 			console.log(`Stats for ${tokenId}:\n${parseFloat(percListed).toFixed(3) + '%'}/${listedCount} listed of ${unlistedCount + listedCount} minted supply.\n${totalNFts} collection size (minted ${parseFloat(mintedPerc).toFixed(3) + '%'})`);
 			continue;
-		}
-		else if (!wholeWallet && getZeroFlag) {
-			// output a list of accounts with the token associated but 0 balance
-			getAssociatedButZeroAccounts(tokenId, excludeList, returnArray[5]).then((acctList) => {
-				console.log('Airdrop script format');
-				for (let a = 0; a < acctList.length; a++) {
-					console.log(`${acctList[a]},${tokenId},1,0`);
-				}
-			});
-			return;
 		}
 		else {
 			nftOwnerMap = await getSerialNFTOwnership(tokenId, walletId, returnArray[3], serialsList, returnArray[5], returnArray[6], excludeList, verbose);
