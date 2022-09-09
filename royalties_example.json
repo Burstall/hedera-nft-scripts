@@ -1,0 +1,11 @@
+{
+	"1": {
+	  "account": "0.0.111",
+	  "percentage": 2,
+	  "fbf": 10
+	},
+	"2": {
+	  "account": "0.0.222",
+	  "percentage": 0.5
+	}
+}
