@@ -161,8 +161,17 @@ async function main() {
 				const timestamp = startTime.toISOString().split('.')[0].replaceAll(':', '-');
 				filename = `./${acctToChange}-PK-${timestamp}.txt`;
 			}
-			fs.writeFile(filename, outputString, () => {
-				console.log('PK File created');
+
+			fs.writeFile(filename, outputString, { flag: 'w' }, function(err) {
+				if (err) {return console.error(err);}
+				// read it back in to be sure it worked.
+				fs.readFile(filename, 'utf-8', function(err) {
+					if (err) {
+						console.log('Reading file failed -- printing to console to ensure PK not lost');
+						console.log(outputString);
+					}
+					console.log('PK File created', filename);
+				});
 			});
 		}
 		catch (err) {
