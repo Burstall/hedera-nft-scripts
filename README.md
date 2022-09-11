@@ -199,3 +199,107 @@ trackHederaNFTs.js
 Scans for **ALL** NFTs on the network and tracks which wallets own what balances. Used to try and assess number of users / collectors on the network through time. It's not fast but it does keep you updated on progress.
 
 Usage: node trackHederaNFTs.js
+
+---
+
+convertNFTexportioToTMTMetadata.js
+
+Basic script to show maniuplation and conversion of JSON objects. In this case converting from NFTexport.io metadata format to something more friendly for minting on Hedera with TMT or equivalent
+
+.env settings (can be adjust with command line arguments too)
+###Metadata Conversion
+COLLECTION_WEBSITE=
+COLLECTION_COMPILER=
+COLLECTION_CREATOR=
+COLLECTION_LOGO=
+COLLECTION_CATEGORY=
+COLLECTION_DESC=
+
+Usage: node convertNFTexportioToTMTMetadata.js -process <file> [-website <url>] [-compiler <name>] [-creator <creator>] [-logo <CID>] [-category <category>][-desc 'description here'
+       -process file to read in and process
+       -website project url - optional
+       -compiler        compiler text - optional
+       -creator creator text - optional
+       -logo    Pinned CID for a logo jpg image
+       -category        category text - optional
+       -desc    compiler text - optional
+
+---
+
+createNFT.js
+
+Start of a set of minting tools. This is 'step 1' (see below) of creating the token ID with 0 serials ready to mint.
+
+Planning a three step process for command line minting scripts:
+1) token create (set royalties / name / supply etc.) -> returns supply key / token ID
+2) pin images and resulting metadata on IPFS
+3) mint the NFTs using the pinned metadata
+
+Usage: node createNFT.js [-wipe] [-admin] [-freeze] [-save] [-royalty <XXX.json>]
+                [-name AAA] [-symbol WWW] [-desc 'short max 100 char description here'] [-max M] [-feecap Q]
+       -wipe    add a wipe key
+       -admin   add a admin key
+       -freeze  add a freeze key
+       -pause   add a pause key
+       -royalty XXX.json        path to .json file containing royalties if applicable
+       -save    save keys to file on completion
+       -feecap Q where Q is the max HBAR spend (defaults to 50h)
+       -name    token name
+       -symbol  token symbol
+       -desc    token description
+       -max     maxSupply
+
+.env settings:
+#mint NFT Token
+MY_ACCOUNT_ID=
+MY_PRIVATE_KEY=
+NFT_NAME=
+NFT_SYMBOL=
+NFT_DESC=
+NFT_MAX_SUPPLY=
+
+Per the usage pattern you can override NFT details on the command line if needed otherwise it will use values from the .env
+
+pass in the royalty .json file with -royalty (optional) -> see **royalties_example.json** for a guide.
+
+the script will read in the information and present you with a summary asking for confirmation to attempt the token create. once complete the script will ask if you wish to have the details & keys saved to file (highly recommended) - if not / on failure it will print to console.
+
+---
+
+mintNFTfromPinnedMetadata.js
+
+This is 'step 3' (see above) -> NFT minting script if you have already pinned the metatdata.json file into IPFS and created the token. Designed to track status and be replayable in case of failure during the minting process.
+
+Usage: node mintNFTfromPinnedMetadata.js -process <file>
+       -process json file to read in and process
+                File format: 
+        { 
+                "ipfs://XXXX/metadata.json", 
+                "ipfs://YYYY/metadata.json", 
+                "ipfs://ZZZZ/metadata.json"  
+        }
+or (output format of this script that includes tracking)
+
+        {
+                "0: {
+                        "cid": "ipfs://XXXX/metadata.json",
+                        "minted": true,
+                        "serial": "629"
+                },
+                "1": {
+                        "cid": "ipfs://YYY/metadata.json",
+                        "minted": false,
+                },
+                "2": {
+                        "cid": "ipfs://ZZZZ/metadata.json",
+                }
+        }
+
+.env settings:
+MY_ACCOUNT_ID=
+MY_PRIVATE_KEY=
+ENVIRONMENT=
+NFT_TOKEN_ID=
+NFT_SUPPLY_KEY=
+#batch size defaults to 10 which is the maximum if missing / no value
+NFT_MINT_BATCH_SIZE=
