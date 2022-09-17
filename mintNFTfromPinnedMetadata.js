@@ -300,7 +300,7 @@ async function main() {
 
 async function writeProgress(filename, pinnedMetadataObj) {
 	// write back out the updated file
-	const saveFilename = 'output_' + filename.replace(/^\.\\/, '');
+	const saveFilename = 'output_' + env + '_' + filename.replace(/^\.\\/, '');
 	const outputStr = JSON.stringify(pinnedMetadataObj, null, 4);
 	fs.writeFile(saveFilename, outputStr, { flag: 'w' }, function(err) {
 		if (err) {return console.error(err);}
