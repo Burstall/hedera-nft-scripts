@@ -203,11 +203,11 @@ async function main() {
 	await writeProgress(fileToProcess, pinnedMetadataObj);
 
 	// check enough space on token to mint
-	if ((maxSupply - totSupply - plannedMint) > 0) {
+	if ((maxSupply - totSupply - plannedMint) >= 0) {
 		console.log('Precheck passed - enough space on token to mint');
 	}
 	else {
-		console.log('Not enough space on token to mint - please check file specified');
+		console.log('Not enough space on token to mint - please check file specified', `Max Supply: ${maxSupply}`, `Current Supply: ${totSupply}`, `Planned mint: ${plannedMint}`);
 		process.exit(1);
 	}
 
@@ -216,6 +216,7 @@ async function main() {
 	console.log(`- Using account: ${operatorId} to pay`);
 	console.log('- Using ENIVRONMENT:', env);
 	console.log('- Planning to mint:', plannedMint);
+	console.log('- Using batch size:', nftBatchSize);
 
 	const execute = readlineSync.keyInYNStrict('Do wish to execute the mint?');
 
