@@ -12,6 +12,9 @@
     "@hashgraph/sdk": "^2.16.0",
     "cross-fetch": "^3.1.5",
     "dotenv": "^16.0.1",
+    "files-from-path": "^0.2.6",
+    "mime": "^3.0.0",
+    "nft.storage": "^7.0.0",
     "readline-sync": "^1.4.10"
   },
   "devDependencies": {
