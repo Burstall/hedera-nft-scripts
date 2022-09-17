@@ -6,14 +6,14 @@ const {
 } = require('@hashgraph/sdk');
 const fs = require('fs');
 
-const maxRetries = 5;
+const maxRetries = 11;
 const baseUrl = 'https://mainnet-public.mirrornode.hedera.com';
 const tokensUrl = '/api/v1/tokens/';
 const txsUrl = '/api/v1/transactions/';
 let verbose = false;
 let outputAsFile = true;
 const addressRegex = /(0\.0\.[1-9][0-9]+)/i;
-const rpsThreshold = 95;
+const rpsThreshold = 50;
 let threshold = 1;
 
 function getArg(arg) {
