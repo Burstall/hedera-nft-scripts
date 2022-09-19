@@ -303,3 +303,21 @@ NFT_TOKEN_ID=
 NFT_SUPPLY_KEY=
 #batch size defaults to 10 which is the maximum if missing / no value
 NFT_MINT_BATCH_SIZE=
+
+----
+
+tokenGraveyard.js
+
+Interaction script to use the token graveyard. Works in MAIN & TEST environements to help unclog your wallet of failed mints where you can't grab the supply key. 
+
+Cost -> there is a nominal cost to associate a new token (default: 5 hbar + association fee & you can check the live cost with the -cost option) of course if feeling generous you cna override the payment to be higher with -pay option. You can of course deploy your own copy given the repo is freely available however it may cost you more to do that :D
+
+Usage: node tokenGraveyard.js [-associate 0.0.XXX | -cost] [-pmt Z]
+       -associate 0.0.XXX       specify the token to associate for the graveyard
+       -cost                            query the minimum cost of the service
+       -pay Z                           override the default payment for usage
+
+.env settings:
+MY_ACCOUNT_ID=
+MY_PRIVATE_KEY=
+ENVIRONMENT=
