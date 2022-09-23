@@ -1,4 +1,4 @@
-import { Client, PrivateKey, AccountBalanceQuery, Hbar, AccountId, TokenAssociateTransaction, TransferTransaction, TokenId } from '@hashgraph/sdk';
+import { Client, PrivateKey, AccountBalanceQuery, Hbar, AccountId, TokenAssociateTransaction, TransferTransaction, TokenId, HbarUnit } from '@hashgraph/sdk';
 import dotenv from 'dotenv';
 dotenv.config();
 import fetch from 'cross-fetch';
@@ -152,11 +152,12 @@ async function executeTransaction(signedTx, client, batchNum) {
 
 async function main() {
 	if (getArgFlag('h')) {
-		console.log('Usage: node NFTTransferTwoPKs.mjs -t <token> [-s <serials> | -r X] [-v]');
+		console.log('Usage: node NFTTransferTwoPKs.mjs -t <token> [-s <serials> | -r X] [-ft 0.0.ZZZ] [-v]');
 		console.log('Designed to move **ALL** of a token from one account to another when you have both keys');
 		console.log('       -t token		the token to move');
 		console.log('       -s <serials>    transgfer specific serial(s)');
 		console.log('             (comma seperated or - for range e.g. 2,5,10 or 1-10)');
+		console.log('       -ft	0.0.ZZZ		pay with fungible token');
 		console.log('       -r X            transfer a random X serials');
 		console.log('       -v          		verbose [debug]');
 		return;
@@ -221,7 +222,7 @@ async function main() {
 		}
 		else {
 			// only one serial to check
-			requestedSerialsList = [serialsArg];
+			requestedSerialsList = [Number(serialsArg)];
 		}
 
 	}
@@ -231,6 +232,8 @@ async function main() {
 	console.log(`Found ${ownedSerialsList.length} serials on account ${senderAcctId}`);
 
 	let selectedSerialsList = [];
+
+	const useFT = getArg('ft') ? true : false;
 
 	if (getArgFlag('r')) {
 		const randSize = Number(getArg('r'));
@@ -249,7 +252,7 @@ async function main() {
 		// check the requested serials are owned
 		if (requestedSerialsList.every(elem => ownedSerialsList.includes(elem))) {
 			console.log(`Sending ${requestedSerialsList.length} serials`, requestedSerialsList);
-			selectedSerialsList = ownedSerialsList;
+			selectedSerialsList = requestedSerialsList;
 		}
 		else {
 			console.log('Sending account does not own all serials specified -- exiting');
@@ -337,11 +340,23 @@ async function main() {
 		}
 		// need to expose economics given not treasury account
 		if (verbose) console.log('Sending NFT(s)');
-		tokenTransferTx
-			.addHbarTransfer(recAccountIdFromString, new Hbar(-0.001))
-			.addHbarTransfer(senderAccountIdFromString, new Hbar(0.001))
-			.setTransactionMemo(memo)
-			.freezeWith(client);
+
+		if (!useFT) {
+			tokenTransferTx
+				.addHbarTransfer(recAccountIdFromString, new Hbar(-1, HbarUnit.Tinybar))
+				.addHbarTransfer(senderAccountIdFromString, new Hbar(1, HbarUnit.Tinybar))
+				.setTransactionMemo(memo)
+				.freezeWith(client);
+		}
+		else {
+			const fungibleToken = TokenId.fromString(getArg('ft'));
+			console.log('Paying with:', fungibleToken.toString());
+			tokenTransferTx
+				.addTokenTransfer(fungibleToken, recAccountIdFromString, -1)
+				.addTokenTransfer(fungibleToken, senderAccountIdFromString, 1)
+				.setTransactionMemo(memo)
+				.freezeWith(client);
+		}
 
 		// sign
 		let signedTx = await tokenTransferTx.sign(senderPK);
