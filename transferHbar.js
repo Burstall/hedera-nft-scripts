@@ -127,10 +127,12 @@ async function transferHbarFcn(sender, receiver, amount, memo = null, multiSig =
 	let transferSigned;
 
 	if (multiSig) {
+		// from testing having the operator / fee payer as sep account
 		// add the known signature
 		// const knownSig = (await transferTx.sign(operatorKey)).toBytes();
 		// const knownPublicKey = operatorKey.publicKey;
 		// transferSigned = await transferTx.addSignature(knownPublicKey, knownSig);
+
 		// request other signatures
 		transferSigned = await requestMultiSig(transferTx);
 	}
@@ -139,7 +141,6 @@ async function transferHbarFcn(sender, receiver, amount, memo = null, multiSig =
 		transferSigned = await transferSigned.sign(operatorKey);
 	}
 
-	console.log('TRANSFER HBAR: The public keys that signed the transaction  ' + await transferSigned.getSignatures());
 
 	const transferSubmit = await transferSigned.execute(client);
 	const transferRx = await transferSubmit.getReceipt(client);

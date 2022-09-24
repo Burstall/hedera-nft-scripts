@@ -55,7 +55,7 @@ function getArgFlag(arg) {
 
 async function main() {
 	if (getArgFlag('h')) {
-		console.log('Usage: node updatePrivateKey.js [-generate]');
+		console.log('Usage: node multioSigSigner.js [-generate]');
 		console.log('       			[-query [-bytes <TRANSACTIONBYTES as base64>]');
 		console.log('       			[-sign [-privatekeys \'302ABC,302QQA\'] [-bytes <TRANSACTIONBYTES as base64>]');
 		console.log('			[-newaccount [-threshold Y] [-initialbal Z] [-publickeys \'MFC,BRV,GAS\']]');
@@ -130,8 +130,7 @@ async function main() {
 
 			for (let k = 0; k < privateKeyList.length; k++) {
 				const pk = PrivateKey.fromString(privateKeyList[k]);
-				const signedTx = await tx.sign(pk);
-				const signedTxAsBytes = signedTx.toBytes();
+				const signedTxAsBytes = await pk.signTransaction(tx);
 				const signedTxBytesAsBase64 = Buffer.from(signedTxAsBytes).toString('base64');
 				console.log('\n*Signed - tx@' + k + ' *\n' +
 				'-------Copy between lines-------\n' +

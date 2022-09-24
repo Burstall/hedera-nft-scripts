@@ -44,7 +44,6 @@ async function requestMultiSig(transaction) {
 		const [pubKey, encodedTx] = tuple.split(':');
 		const publicKeyToAdd = PublicKey.fromString(pubKey);
 		const signedTx = Uint8Array.from(Buffer.from(encodedTx, 'base64'));
-		console.log(t, JSON.stringify(await Transaction.fromBytes(signedTx)));
 		// add signatures
 		await transaction.addSignature(publicKeyToAdd, signedTx);
 		sigsFound++;
@@ -56,8 +55,6 @@ async function requestMultiSig(transaction) {
 	if ((txClockEnd.getTime() - txClockStart.getTime()) >= 119000) {
 		console.log('Likely time elapsed -- expect tx to fail');
 	}
-
-	console.log('MODULE: The public keys that signed the transaction  ' + JSON.stringify(transaction.getSignatures()));
 
 	return transaction;
 }
