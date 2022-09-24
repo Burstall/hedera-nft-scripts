@@ -162,8 +162,11 @@ async function main() {
 				filename = `./${acctToChange}-PK-${timestamp}.txt`;
 			}
 
-			fs.writeFile(filename, outputString, { flag: 'w' }, function(err) {
-				if (err) {return console.error(err);}
+			fs.writeFileSync(filename, outputString, { flag: 'w' }, function(err) {
+				if (err) {
+					console.log('ERROR occured - printing to console:\n', outputString);
+					return console.error(err);
+				}
 				// read it back in to be sure it worked.
 				fs.readFile(filename, 'utf-8', function(err) {
 					if (err) {
