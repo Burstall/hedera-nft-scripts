@@ -3,26 +3,42 @@ const {
 	PrivateKey,
 	AccountId,
 	TransferTransaction,
+	Hbar,
+	TransactionId,
 } = require('@hashgraph/sdk');
 require('dotenv').config();
-const readlineSync = require('readline-sync');
+
+const { requestMultiSig } = require('./reqMultiSig.js');
 
 const operatorId = AccountId.fromString(process.env.MY_ACCOUNT_ID);
 const operatorKey = PrivateKey.fromString(process.env.MY_PRIVATE_KEY);
 const env = process.env.ENVIRONMENT || null;
+const readlineSync = require('readline-sync');
 let client;
 
 async function main() {
 	if (getArgFlag('h')) {
-		console.log('Usage: node transferHbar.js -rec 0.0.XXXX -amt Z [-memo \'ABC DEF\' ][-multisig]');
+		console.log('Usage: node transferHbar.js -rec 0.0.XXXX -amt Z [-memo \'ABC DEF\' ] [-multisig]');
+		// console.log('Usage: node transferHbar.js [-sender 0.0.ZZZ] -rec 0.0.XXXX -amt Z [-memo \'ABC DEF\' ] [-multisig]');
+		// console.log('       -sender 		overide the account sending - will require additional signatures');
 		console.log('       -rec 			address of the receving account');
 		console.log('       -amt 			amount to send');
-		console.log('       -multisig 		flag to look for multisig signing');
+		console.log('       -multisig		flag to look for multisig signing');
 		process.exit(0);
 	}
 
-	const multiSig = getArgFlag('multisig');
+	let multiSig = getArgFlag('multisig');
 	const memo = getArg('memo');
+
+	let sender;
+	if (getArgFlag('sender')) {
+		// turn on multi sig function to colect additional signatures
+		multiSig = true;
+		sender = AccountId.fromString(getArg('sender'));
+	}
+	else {
+		sender = operatorId;
+	}
 
 	const receiver = AccountId.fromString(getArg('rec'));
 
@@ -42,7 +58,10 @@ async function main() {
 		process.exit(1);
 	}
 
-	console.log(`- Using account: ${operatorId} as sender`);
+	console.log(`- Using account: ${sender} as sender`);
+	console.log('- Receiver:', receiver.toString());
+	console.log('- paying tx fees:', operatorId.toString());
+	console.log('- Amount:', new Hbar(amount).toString());
 	console.log('- Using ENVIRONMENT:', env);
 
 	if (env == 'TEST') {
@@ -60,13 +79,21 @@ async function main() {
 
 	client.setOperator(operatorId, operatorKey);
 
-	const result = await transferHbarFcn(operatorId, receiver, amount, memo, multiSig);
+	const proceed = readlineSync.keyInYNStrict('Do you want to maske the transfer?');
 
-	if (result) {
-		console.log('\n-Transfer completed');
+	if (proceed) {
+		const result = await transferHbarFcn(sender, receiver, amount, memo, multiSig);
+
+		if (result) {
+			console.log('\n-Transfer completed');
+		}
+		else {
+			console.log('\n-**FAILED**');
+		}
 	}
 	else {
-		console.log('\n-**FAILED**');
+		console.log('User aborted');
+		return;
 	}
 
 }
@@ -88,7 +115,8 @@ async function transferHbarFcn(sender, receiver, amount, memo = null, multiSig =
 	const transferTx = new TransferTransaction()
 		.addHbarTransfer(receiver, amount)
 		.addHbarTransfer(sender, -amount)
-		.setNodeAccountIds(nodeId);
+		.setNodeAccountIds(nodeId)
+		.setTransactionId(TransactionId.generate(operatorId));
 
 	if (memo) {
 		transferTx.setTransactionMemo(memo);
@@ -99,63 +127,19 @@ async function transferHbarFcn(sender, receiver, amount, memo = null, multiSig =
 	let transferSigned;
 
 	if (multiSig) {
-		console.log('\n-MultiSig signing\n');
-		const txClockStart = new Date();
-		const knownSig = (await transferTx.sign(operatorKey)).toBytes();
-		const knownPublicKey = operatorKey.publicKey;
-		transferSigned = transferTx.addSignature(knownPublicKey, knownSig);
-
-		const txAsBytes = transferTx.toBytes();
-		const txBytesAsBase64 = Buffer.from(txAsBytes).toString('base64');
-
-		console.log('Please collect the additional signatures:\n\n' +
-			'return format <public key1>:<signed bytes1>,<public key2>:<signed bytes2>,' +
-			'<public key3>:<signed bytes3> etc.\n\n-------Copy between lines-------\n' +
-			txBytesAsBase64 + '\n-------Copy between lines-------');
-
-
-		// wait on user entry
-		const ac = new AbortController();
-		const signal = ac.signal;
-
-		const encodedSignedTxs = readlineSync.question('\n\nPlease enter signed transactions', { signal });
-
-		signal.addEventListener('abort', () => {
-			console.log('The transaction has timed out');
-		}, { once: true });
-
-		setTimeout(() => ac.abort(), 120000);
-
-		console.log('input:' + encodedSignedTxs + '@');
-		// split user input on comma
-		const encodedSignedTxList = encodedSignedTxs.split(',');
-		console.log(encodedSignedTxList);
-
-		// for each tuple of public key:bytes
-		let sigsFound = 0;
-		for (let t = 0; t < encodedSignedTxList.length; t++) {
-			const tuple = encodedSignedTxList[t];
-			if (!tuple) continue;
-			// split on :
-			const [pubKey, encodedTx] = tuple.split(':');
-			// add signatures
-			transferSigned = transferTx.addSignature(pubKey, encodedTx);
-			sigsFound++;
-		}
-		console.log('\n\n-Added ' + sigsFound + ' signatures');
-
-		const txClockEnd = new Date();
-		// check if 119 seconds or greater have elapsed
-		if ((txClockEnd.getTime() - txClockStart.getTime()) >= 119000) {
-			console.log('Likely time elapsed -- expect tx to fail');
-		}
-
-
+		// add the known signature
+		// const knownSig = (await transferTx.sign(operatorKey)).toBytes();
+		// const knownPublicKey = operatorKey.publicKey;
+		// transferSigned = await transferTx.addSignature(knownPublicKey, knownSig);
+		// request other signatures
+		transferSigned = await requestMultiSig(transferTx);
 	}
 	else {
 		console.log('\n-Single signing\n');
-		transferSigned = await transferTx.sign(operatorKey);
+		transferSigned = await transferSigned.sign(operatorKey);
 	}
+
+	console.log('TRANSFER HBAR: The public keys that signed the transaction  ' + await transferSigned.getSignatures());
 
 	const transferSubmit = await transferSigned.execute(client);
 	const transferRx = await transferSubmit.getReceipt(client);
