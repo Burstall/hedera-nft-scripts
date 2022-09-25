@@ -12,6 +12,7 @@ const {
 	PublicKey,
 	AccountUpdateTransaction,
 	TransactionId,
+	TransferTransaction,
 } = require('@hashgraph/sdk');
 const fs = require('fs');
 const readlineSync = require('readline-sync');
@@ -111,7 +112,8 @@ async function main() {
 
 		console.log('\n* memo: ' + tx._transactionMemo +
 			'\n* maxTxFee: ' + new Hbar(tx._maxTransactionFee._valueInTinybar, HbarUnit.Tinybar).toString() +
-			'\n* proposed hbar tx: ' + await getHbarTransfers(tx));
+			'\n* proposed tx type: ' + tx.constructor.name + ' : ' + getTransactionType(tx) +
+			'\n* proposed hbar tx: ' + getHbarTransfers(tx));
 
 		if (isQuery) return;
 
@@ -391,8 +393,9 @@ async function updateKeysOnAccount(accountToChange, oldKey, newKey, operatorId, 
 /**
  * Encapsulation of transaction processing to get hbar movements
  * @param {Transaction} tx
+ * @returns {string} findings
  */
-async function getHbarTransfers(tx) {
+function getHbarTransfers(tx) {
 	let outputStr = '';
 
 	const hbarTransfers = tx._hbarTransfers;
@@ -402,6 +405,20 @@ async function getHbarTransfers(tx) {
 	}
 
 	return outputStr ? outputStr : 'No Hbar transfers found';
+}
+
+/**
+ * decode the transaction type
+ * @param {Transaction} transaction
+ * @returns {string} identified type
+ */
+function getTransactionType(transaction) {
+	if (transaction instanceof AccountUpdateTransaction) {
+		return 'Account Update : ' + transaction._accountId.toString();
+	}
+	if (transaction instanceof TransferTransaction) return 'Transfer Transaction';
+
+	return 'Type unidentifed - please share bytes with the devs';
 }
 
 main();
