@@ -271,7 +271,14 @@ async function main() {
 					let oldkey = process.env.OLD_KEY;
 					if (getArgFlag('oldkey')) oldkey = getArg('oldkey');
 					const oldKeyAsKey = oldkey ? PrivateKey.fromString(oldkey) : operatorKey;
-					if (oldKeyAsKey == operatorKey) console.log('Using operator key');
+					if (oldKeyAsKey == operatorKey) {
+						console.log('\n-Using operator key as old key');
+					}
+					else {
+						console.log('\n-Using OLD_KEY from env file');
+					}
+
+					console.log('\n-**Account update requires the new keys to sign too**\n');
 
 					const proceed = readlineSync.keyInYNStrict('Do you want change the account to a multiSig wallet?');
 
@@ -348,7 +355,6 @@ async function multiSigAccountCreator(initialBalance, thresholdKey, operatorId, 
  */
 async function updateKeysOnAccount(accountToChange, oldKey, newKey, operatorId, operatorKey, client) {
 	let signedTx;
-
 	const transaction = new AccountUpdateTransaction()
 		.setAccountId(accountToChange)
 		.setKey(newKey)
