@@ -13,6 +13,7 @@ const {
 	AccountUpdateTransaction,
 	TransactionId,
 	TransferTransaction,
+	ContractExecuteTransaction,
 } = require('@hashgraph/sdk');
 const fs = require('fs');
 const readlineSync = require('readline-sync');
@@ -414,9 +415,14 @@ function getHbarTransfers(tx) {
  */
 function getTransactionType(transaction) {
 	if (transaction instanceof AccountUpdateTransaction) {
-		return 'Account Update : ' + transaction._accountId.toString();
+		return `Account Update : ${transaction._accountId}`;
 	}
-	if (transaction instanceof TransferTransaction) return 'Transfer Transaction';
+	else if (transaction instanceof TransferTransaction) {
+		return 'Transfer Transaction';
+	}
+	else if (transaction instanceof ContractExecuteTransaction) {
+		return `${transaction.contractId} : gas -> ${transaction.gas}`;
+	}
 
 	return 'Type unidentifed - please share bytes with the devs';
 }
