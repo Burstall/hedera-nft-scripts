@@ -4,8 +4,9 @@ const baseUrl = process.env.MIRROR_NODE_BASEURL || 'https://mainnet-public.mirro
 const maxRetries = Number(process.env.MAX_RETRY) || 3;
 let totalTxProcessed = 0;
 let totalTxEntries = 0;
+let excludeList = [];
 
-async function pullTransactions(pathUrl, wallet, tokenDecimal, accountBalanceMap = new Map()) {
+async function pullTransactions(pathUrl, wallet, tokenId, tokenDecimal, accountBalanceMap = new Map()) {
 	try {
 		const data = await fetchJson(baseUrl + pathUrl);
 		// iterate through transactions checking time stamp in bounds and wallet too.
@@ -15,9 +16,12 @@ async function pullTransactions(pathUrl, wallet, tokenDecimal, accountBalanceMap
 			if (tx.token_transfers) {
 				for (let t = 0; t < tx.token_transfers.length; t++) {
 					const transfer = tx.token_transfers[t];
+					const token_id = transfer.token_id;
+					if (token_id != tokenId) continue;
 					const account = transfer.account;
 					const amt = -Number(transfer.amount) / (1 * (10 ** tokenDecimal));
 					// only look at credits to the account
+					if (excludeList.includes(account)) continue;
 					if (account != wallet && amt > 0) {
 						let totalAmt = accountBalanceMap.get(account) || 0;
 						totalAmt += amt;
@@ -30,7 +34,7 @@ async function pullTransactions(pathUrl, wallet, tokenDecimal, accountBalanceMap
 		}
 
 		if (data.links.next) {
-			return await pullTransactions(data.links.next, wallet, tokenDecimal, accountBalanceMap);
+			return await pullTransactions(data.links.next, wallet, tokenId, tokenDecimal, accountBalanceMap);
 		}
 
 	}
@@ -109,12 +113,13 @@ async function getTokenType(tokenId) {
 
 async function main() {
 	if (getArgFlag('h')) {
-		console.log('usage: node checkFTRaffleEntries.mjs -cost XX -start <epoch> -end <epoch> -wallet 0.0.ZZZ -token 0.0.QQQ');
+		console.log('usage: node checkFTRaffleEntries.mjs -cost XX -start <epoch> -end <epoch> -wallet 0.0.ZZZ -token 0.0.QQQ [-exclude 0.0.XX,0.0.WW]');
 		console.log('				-cost 	the cost of a ticket in hbar');
 		console.log('				-start 	start time as EPOCH');
 		console.log('				-end 	end time as EPOCH');
 		console.log('				-wallet	wallet to search txs for');
 		console.log('				-token	FT token for payment 0.0.QQQ');
+		console.log('				-exclude	wallets to exclude comma delimited');
 		console.log('https://www.epochconverter.com/ may be usueful for conversion');
 		process.exit(0);
 	}
@@ -124,6 +129,10 @@ async function main() {
 	const cost = getArg('cost');
 	const token = getArg('token');
 
+	if (getArgFlag('exclude')) {
+		excludeList = getArg('exclude').split(',');
+	}
+
 	const [tokenType, tokenDecimal, tokenName] = await getTokenType(token);
 	if (tokenType == 'NON_FUNGIBLE_UNIQUE') {
 		console.log('Script designed for FT not NFT - exiting');
@@ -132,6 +141,7 @@ async function main() {
 
 	console.log('Using:' +
 					'\nWallet: ' + wallet +
+					'\nExcluding: ' + excludeList +
 					'\nStart: ' + new Date(startTime * 1000).toISOString() +
 					'\nEnd: ' + new Date(endTime * 1000).toISOString() +
 					'\nTicket Cost: ' + cost +
@@ -144,7 +154,7 @@ async function main() {
 	}
 
 	const pathUrl = `/api/v1/transactions?account.id=${wallet}&transactionType=cryptotransfer&type=credit&timestamp=gte:${startTime}&timestamp=lte:${endTime}`;
-	const acctBalMap = await pullTransactions(pathUrl, wallet, tokenDecimal);
+	const acctBalMap = await pullTransactions(pathUrl, wallet, token, tokenDecimal);
 
 	console.log('Wallet\tPaid\tTickets\tWasted');
 	let totalAmount = 0;
