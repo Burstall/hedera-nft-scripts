@@ -138,7 +138,7 @@ async function transferHbarFcn(sender, receiver, amount, memo = null, multiSig =
 	}
 	else {
 		console.log('\n-Single signing\n');
-		transferSigned = await transferSigned.sign(operatorKey);
+		transferSigned = await transferTx.sign(operatorKey);
 	}
 
 

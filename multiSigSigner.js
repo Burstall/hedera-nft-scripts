@@ -57,7 +57,7 @@ function getArgFlag(arg) {
 
 async function main() {
 	if (getArgFlag('h')) {
-		console.log('Usage: node multioSigSigner.js [-generate]');
+		console.log('Usage: node multiSigSigner.js [-generate]');
 		console.log('       			[-query [-bytes <TRANSACTIONBYTES as base64>]');
 		console.log('       			[-sign [-privatekeys \'302ABC,302QQA\'] [-bytes <TRANSACTIONBYTES as base64>]');
 		console.log('			[-newaccount [-threshold Y] [-initialbal Z] [-publickeys \'MFC,BRV,GAS\']]');

@@ -19,8 +19,7 @@ async function requestMultiSig(transaction) {
 	const txBytesAsBase64 = Buffer.from(txAsBytes).toString('base64');
 
 	console.log('Please collect the additional signatures:\n\n' +
-			'return format <public key1>:<signed bytes1>,<public key2>:<signed bytes2>,' +
-			'<public key3>:<signed bytes3> etc.\n\n-------Copy between lines-------\n' +
+			'return format <public key1>:<signed bytes1>\n\nSpecify the number of signed tx to add\n\n-------Copy between lines-------\n' +
 			txBytesAsBase64 + '\n-------Copy between lines-------');
 
 
