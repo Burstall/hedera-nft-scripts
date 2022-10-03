@@ -3,7 +3,6 @@ const {
 	PrivateKey,
 	AccountId,
 	TransferTransaction,
-	Hbar,
 	TransactionId,
 	TokenId,
 } = require('@hashgraph/sdk');
@@ -74,7 +73,7 @@ async function main() {
 	console.log(`- Using account: ${sender} as sender`);
 	console.log('- Receiver:', receiver.toString());
 	console.log('- paying tx fees:', operatorId.toString());
-	console.log('- Amount:', new Hbar(amount).toString());
+	console.log('- Amount:', amount);
 	console.log('- Using ENVIRONMENT:', env);
 
 	if (isApproval) {
@@ -111,7 +110,7 @@ async function main() {
 	const proceed = readlineSync.keyInYNStrict('Do you want to make the transfer?');
 
 	if (proceed) {
-		const result = await transferFungibleFcn(tokenId, sender, receiver, amount, memo);
+		const result = await transferFungibleFcn(tokenId, sender, receiver, amount * (10 ** tokenDecimal), memo);
 
 		if (result) {
 			console.log('\n-Transfer completed');
