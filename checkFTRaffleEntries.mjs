@@ -1,5 +1,7 @@
 import { fetch } from 'cross-fetch';
 import * as fs from 'fs';
+import dotenv from 'dotenv';
+dotenv.config();
 const baseUrl = process.env.MIRROR_NODE_BASEURL || 'https://mainnet-public.mirrornode.hedera.com';
 const maxRetries = Number(process.env.MAX_RETRY) || 3;
 let totalTxProcessed = 0;

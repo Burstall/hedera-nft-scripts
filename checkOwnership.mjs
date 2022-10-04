@@ -1,5 +1,7 @@
 import fetch from 'cross-fetch';
 import * as fs from 'fs';
+import dotenv from 'dotenv';
+dotenv.config();
 
 const maxRetries = 10;
 const zuseEscrow = '0.0.690356';
