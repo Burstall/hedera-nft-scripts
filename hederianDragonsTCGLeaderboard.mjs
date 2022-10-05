@@ -71,6 +71,7 @@ async function getSerialNFTAttribs(tokenId) {
 
 		for (let n = 0; n < nfts.length; n++) {
 			promisesList.push(processNFT(nfts[n]));
+			if (n % 30 == 0) await sleep(1000);
 		}
 
 		routeUrl = json.links.next;
@@ -107,13 +108,16 @@ async function prepareEmptyDragonMap() {
 
 async function fetchIPFSJson(ifpsUrl, depth = 0, seed = 0) {
 	if (depth >= maxRetries) return null;
-	if (depth > 15) console.log('Attempt: ', depth);
+	if (depth > 10) {
+		console.log('Attempt: ', depth);
+		await sleep(150 * depth + 7 * seed);
+	}
 	depth = depth + 1;
 
 	const url = `${ipfsGateways[seed % ipfsGateways.length]}${ifpsUrl}`;
 	if (verbose) {console.log('Fetch: ', url, depth);}
 	seed += 1;
-	const sleepTime = ((12 * depth ^ 2 * seed) % 100) * (depth % 5);
+	const sleepTime = ((12 * depth ^ 2 * seed) % 100) * (depth % 5) + 1000;
 	try {
 		const res = await fetchWithTimeout(url);
 		if (res.status != 200) {
