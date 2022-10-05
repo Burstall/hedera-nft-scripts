@@ -411,6 +411,7 @@ async function getSerialFungibleCommonOwnership(tokenId, name, decimals, walletI
 
 async function getTokensInWallet(wallet, getZeroFlag, verbose) {
 
+	/* adjusted due to undocumented change ion Hedera REST api
 	const url = `https://mainnet-public.mirrornode.hedera.com/api/v1/balances?account.id=${wallet}`;
 	if (verbose) {console.log(url);}
 
@@ -432,6 +433,37 @@ async function getTokensInWallet(wallet, getZeroFlag, verbose) {
 			}
 		});
 	});
+	return tokenList;
+	*/
+
+	// base URL
+	const baseUrl = 'https://mainnet-public.mirrornode.hedera.com';
+	let routeUrl = `/api/v1/accounts/${wallet}/nfts?limit=100`;
+
+	const tokenList = [];
+	if (verbose) { console.log(baseUrl + routeUrl);}
+	let batch = 0;
+	do {
+		batch++;
+		const json = await fetchJson(baseUrl + routeUrl);
+		if (json == null) {
+			console.log('FATAL ERROR: no NFTs found', baseUrl + routeUrl);
+			// unlikely to get here but a sensible default
+			return;
+		}
+		const nfts = json.nfts;
+
+		for (let n = 0; n < nfts.length; n++) {
+			console.log(`Batch ${batch} - Processing item:', ${n}, 'of', ${nfts.length}`);
+			const nft = nfts[n];
+			const tokenId = nft.token_id;
+			if (!tokenList.includes(tokenId)) tokenList.push(tokenId);
+		}
+
+		routeUrl = json.links.next;
+	}
+	while (routeUrl);
+
 	return tokenList;
 }
 
