@@ -66,12 +66,15 @@ async function main() {
 		try {
 			if (props) {
 				props.forEach(async function(attribValue) {
-					const trait = attribValue.trait_type.toLowerCase();
+					const isTrait = attribValue.trait_type;
+					if (isTrait) {
+						const trait = isTrait.toLowerCase();
 
-					if (!attribIndex.get(trait)) {
-						attIdx++;
-						attribIndex.set(trait, attIdx);
-						indexAttrib.set(attIdx, trait);
+						if (!attribIndex.get(trait)) {
+							attIdx++;
+							attribIndex.set(trait, attIdx);
+							indexAttrib.set(attIdx, trait);
+						}
 					}
 				});
 			}

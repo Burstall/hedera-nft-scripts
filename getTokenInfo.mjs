@@ -30,19 +30,26 @@ async function fetchJson(url, depth = 0, retries = maxRetries) {
 	}
 }
 
-async function fetchIPFSJson(ifpsUrl, depth = 0, seed = 0) {
+/**
+ *
+ * @param {string} ipfsUrl
+ * @param {number=} depth
+ * @param {number=} seed
+ * @returns {*}
+ */
+async function fetchIPFSJson(ipfsUrl, depth = 0, seed = 0) {
 	if (depth >= maxRetries) return null;
 	if (depth > 0 && verbose) console.log('Attempt: ', depth + 1);
 	depth++;
 
-	const url = `${ipfsGateways[seed % ipfsGateways.length]}${ifpsUrl}`;
+	const url = ipfsUrl.toLowerCase().startsWith('http') ? ipfsUrl : `${ipfsGateways[seed % ipfsGateways.length]}${ipfsUrl}`;
 	if (verbose) {console.log('Fetch: ', url, depth);}
 	seed += 1;
 	try {
 		const res = await fetch(url);
 		if (res.status != 200) {
 			await sleep(12 * depth * seed % 100);
-			return await fetchIPFSJson(ifpsUrl, depth, seed);
+			return await fetchIPFSJson(ipfsUrl, depth, seed);
 		}
 		return res.json();
 
@@ -50,7 +57,7 @@ async function fetchIPFSJson(ifpsUrl, depth = 0, seed = 0) {
 	catch (err) {
 		console.error('Caught error when accessing', depth, url, err);
 		await sleep(12 * depth * seed % 100);
-		return await fetchIPFSJson(ifpsUrl, depth, seed);
+		return await fetchIPFSJson(ipfsUrl, depth, seed);
 	}
 }
 
