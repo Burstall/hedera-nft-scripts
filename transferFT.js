@@ -150,7 +150,7 @@ async function transferFungibleFcn(tokenId, sender, receiver, amount, memo = nul
 		transferTx.addApprovedTokenTransfer(tokenId, onBehalfOfAccount, -amount);
 	}
 	else {
-		transferTx.addHbarTransfer(sender, -amount);
+		transferTx.addTokenTransfer(sender, -amount);
 	}
 
 	if (memo) {

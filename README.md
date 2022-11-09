@@ -308,9 +308,11 @@ NFT_MINT_BATCH_SIZE=
 
 tokenGraveyard.js
 
-Interaction script to use the token graveyard. Works in MAIN & TEST environements to help unclog your wallet of failed mints where you can't grab the supply key. 
+Interaction script to use the token graveyard. Works in MAIN & TEST environments to help unclog your wallet of failed mints where you can't grab the supply key. 
 
-Cost -> there is a nominal cost to associate a new token (default: 5 hbar + association fee & you can check the live cost with the -cost option) of course if feeling generous you cna override the payment to be higher with -pay option. You can of course deploy your own copy given the repo is freely available however it may cost you more to do that :D
+Cost -> there is a nominal cost to associate a new token (default: 5 hbar + association fee & you can check the live cost with the -cost option) of course if feeling generous you can override the payment to be higher with -pay option. You can of course deploy your own copy given the repo is freely available however it may cost you more to do that :D
+
+Once associated you can send tokens to 0.0.1279390 [mainnet] or 0.0.48287676 [testnet] and they will be locked away forever.
 
 Usage: node tokenGraveyard.js [-associate 0.0.XXX | -cost] [-pmt Z]
        -associate 0.0.XXX       specify the token to associate for the graveyard
