@@ -240,6 +240,7 @@ async function main() {
 		// assumes the account sending is treasury account
 		tokenMintTx
 			.setTokenId(tokenId)
+			.setMaxTransactionFee(5)
 			.freezeWith(client);
 
 		// sign
