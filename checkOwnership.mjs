@@ -9,7 +9,7 @@ const hashGuildEscrow = '0.0.1007535';
 const zuseLaunchpad = '0.0.705448';
 const hashAxisMint = '0.0.580000';
 
-const version = '0.2.6';
+const version = '0.2.7';
 
 async function fetchJson(url, depth = 0) {
 	if (depth >= maxRetries) return null;
