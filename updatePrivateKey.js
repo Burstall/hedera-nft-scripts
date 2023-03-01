@@ -35,11 +35,12 @@ function getArgFlag(arg) {
 async function main() {
 	const help = getArgFlag('h');
 	if (help) {
-		console.log('Usage: node updatePrivateKey.js [-acc <account>] [-pk <private key>] [-save [<file-name>]] [-test]');
+		console.log('Usage: node updatePrivateKey.js [-acc <account>] [-pk <private key>] [-ecdsa] [-save [<file-name>]] [-test]');
 		console.log('       -acc <account> 		supply account to reset on commandline');
 		console.log('       	**If not supplied will look for UPDATE_ACCT in .env **');
 		console.log('       -pk <private key> 	supply private key to reset on commandline');
 		console.log('       	**If not supplied will look for OLD_KEY in .env **');
+		console.log('       -edcsa 				use set new *edcsa* key (ED25519 by default)');
 		console.log('       -save 				use -save to save the *NEW* PK to file');
 		console.log('       	**Supresses console output**');
 		console.log('       -save <filename>	to specify the file to save to');
@@ -78,6 +79,8 @@ async function main() {
 
 	client.setOperator(operatorId, operatorKey);
 
+	if (getArgFlag('test')) console.log('**TEST MODE**');
+
 	// check if save to file requested
 	let save = getArgFlag('save');
 	// if so see if a filename was supplied
@@ -111,7 +114,14 @@ async function main() {
 	console.log('Generating new keys...');
 	// Generate New key
 	const mnemonic = await Mnemonic.generate();
-	const newKey = await mnemonic.toPrivateKey();
+	let newKey;
+	if (getArgFlag('ecdsa')) {
+		// Generate new ECDSA key
+		newKey = await mnemonic.toEcdsaPrivateKey();
+	}
+	else {
+		newKey = await mnemonic.toEd25519PrivateKey();
+	}
 
 	// Call regenerate key
 	console.log('Updating account', acctToChange, 'with new Key...');
