@@ -214,11 +214,13 @@ async function main() {
 			// inclusive range
 			const rangeSplit = serialsArg.split('-');
 			for (let i = rangeSplit[0]; i <= rangeSplit[1]; i++) {
-				requestedSerialsList.push(`${i}`);
+				requestedSerialsList.push(i);
 			}
 		}
 		else if (serialsArg.includes(',')) {
 			requestedSerialsList = serialsArg.split(',');
+			// array elements to numbers
+			requestedSerialsList = requestedSerialsList.map(Number);
 		}
 		else {
 			// only one serial to check
