@@ -284,7 +284,7 @@ async function getNFTListingStats(tokenId, tsryAct, verbose = false) {
 	return [unlistedCount, listedCount, totalNFts];
 }
 
-async function getSerialNFTOwnershipForAudit(tokenId, serialsList, tsryAct, excludeList, hodl, epoch, verbose) {
+async function getSerialNFTOwnershipForAudit(tokenId, serialsList, tsryAct, excludeList, hodl, epoch, verbose, walletId) {
 
 	const nftOwnerMap = [];
 
@@ -316,6 +316,9 @@ async function getSerialNFTOwnershipForAudit(tokenId, serialsList, tsryAct, excl
 			if (value.deleted) continue;
 			let nftOwner = value.account_id;
 			if (excludeList.includes(nftOwner)) {
+				continue;
+			}
+			if (walletId != undefined && nftOwner != walletId) {
 				continue;
 			}
 
@@ -675,7 +678,7 @@ async function main() {
 			nftOwnerMap = await getSerialFungibleCommonOwnership(tokenId, tokenDetails.name, tokenDetails.decimal, walletId, excludeList, verbose);
 		}
 		else if (auditSerialsOutput) {
-			nftOwnerMap = await getSerialNFTOwnershipForAudit(tokenId, serialsList, tokenDetails.tsryAcc, excludeList, hodl, epoch, verbose);
+			nftOwnerMap = await getSerialNFTOwnershipForAudit(tokenId, serialsList, tokenDetails.tsryAcc, excludeList, hodl, epoch, verbose, walletId);
 		}
 		else if (getListedStats) {
 			const [unlistedCount, listedCount, totalNFts] = await getNFTListingStats(tokenId, tokenDetails.tsryAcc);
