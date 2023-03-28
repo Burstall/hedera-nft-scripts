@@ -75,7 +75,7 @@ async function main() {
 	const txResult = await beTx.execute(beClient);
 	const mintRx = await txResult.getReceipt(beClient);
 
-	console.log('Result', mintRx.status.toString(), 'serials', mintRx.serials.toString());
+	console.log('Result', mintRx.status.toString(), 'serial', mintRx.serials.toString());
 }
 
 main().then(() => console.log('Complete')).catch((err) => console.error(err));
