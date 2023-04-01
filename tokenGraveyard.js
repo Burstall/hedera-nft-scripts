@@ -18,7 +18,7 @@ const fs = require('fs');
 const Web3 = require('web3');
 const web3 = new Web3();
 
-const CONTRACT_ID_TESTNET = ContractId.fromString('0.0.48287676');
+const CONTRACT_ID_TESTNET = ContractId.fromString('0.0.3969576');
 const CONTRACT_ID_MAINNET = ContractId.fromString('0.0.1279390');
 const DEFAULT_COST = new Hbar(5);
 
@@ -105,8 +105,10 @@ async function main() {
 	else if (getArgFlag('associate')) {
 		const tokenId = TokenId.fromString(getArg('associate'));
 		console.log('\n-Associate token:', tokenId.toString());
+		console.log('\n-Contract:', contractId.toString());
+		console.log('\n **ONLY WORKS IF NO FALL BACK ROYALTY FEE**');
 
-		if (!readlineSync.keyInYNStrict('\nReady to prepare the burial site? Once associated send the tokens to the contract using any method you prefer', contractId.toString())) {
+		if (!readlineSync.keyInYNStrict('\nReady to prepare the burial site? Once associated send the tokens to the contract using any method you prefer' + contractId.toString())) {
 			console.log('**User Aborted - exiting**');
 			process.exit(0);
 		}
@@ -121,6 +123,10 @@ async function main() {
 			const associateStatus = associateRx.status;
 
 			console.log('\n-Association: ' + associateStatus.toString());
+
+			if (associateStatus.toString() == 'SUCCESS') {
+				console.log('\n-Association successful. Send the tokens to', contractId.toString(), 'to bury them.');
+			}
 		}
 		catch (err) {
 			console.log(err);
