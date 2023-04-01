@@ -9,7 +9,9 @@ const hashGuildEscrow = '0.0.1007535';
 const zuseLaunchpad = '0.0.705448';
 const hashAxisMint = '0.0.580000';
 
-const version = '0.2.7';
+const version = '0.3.0';
+
+let creatorAccountOnly = null;
 
 async function fetchJson(url, depth = 0) {
 	if (depth >= maxRetries) return null;
@@ -42,8 +44,13 @@ async function fetchWithTimeout(resource, options = {}) {
 	return response;
 }
 
+/**
+ * Method to scrape a tokens details from the mirror node
+ * @param {String} tokenId token ID 0.0.TTTT as a string
+ * @param {Boolean} verbose ture to print out the URL
+ * @returns {TokenDetails} object with the token details
+ */
 async function getTokenDetails(tokenId, verbose) {
-	const returnArray = [];
 	const url = `https://mainnet-public.mirrornode.hedera.com/api/v1/tokens/${tokenId}`;
 	if (verbose) { console.log(url); }
 
@@ -54,7 +61,7 @@ async function getTokenDetails(tokenId, verbose) {
 	const type = u.type;
 	const symbol = u.symbol || '';
 	const name = u.name || '';
-	const decimals = u.decimals || 0;
+	const decimal = u.decimal || 0;
 	const tsryAcc = u.treasury_account_id;
 	const customFees = u.custom_fees;
 
@@ -98,17 +105,8 @@ async function getTokenDetails(tokenId, verbose) {
 	else {
 		supply = mS;
 	}
-	// supply no longer used however kept in place for array ordering
-	// TODO: refactor as a Map
-	returnArray.push(supply);
-	returnArray.push(type);
-	returnArray.push(symbol);
-	returnArray.push(name);
-	returnArray.push(decimals);
-	returnArray.push(royaltiesStr);
-	returnArray.push(tsryAcc);
 
-	return returnArray;
+	return new TokenDetails(tokenId, supply, type, symbol, name, decimal, royaltiesStr, tsryAcc);
 
 }
 
@@ -162,7 +160,7 @@ async function getSerialNFTOwnership(tokenId, walletId = null, name, serialsList
 			else {
 				currentOwnership[0]++;
 				currentOwnership[1] = `${currentOwnership[1]},${value.serial_number}`;
-				if (spender) currentOwnership[4]++;
+				if (spender) currentOwnership[5]++;
 
 			}
 			nftOwnerMap.set(nftOwner, currentOwnership);
@@ -508,24 +506,25 @@ async function main() {
 
 	const help = getArgFlag('h');
 	if (help) {
-		console.log('Usage: node checkOwnership.mjs [-w <wallet> [-zero]] [-t <token> [-zero] [-listed] [-s <serials>] -ex <wallet>] [-r] [-audit] [-auditserials [-hodl] [-epoch XXX]]] [-v] [-version]');
+		console.log('Usage: node checkOwnership.mjs [-w <wallet> [-creator 0.0.ZZZZ] [-zero]] [-t <token> [-zero] [-listed] [-s <serials>] -ex <wallet>] [-r] [-audit] [-auditserials [-hodl] [-epoch XXX]]] [-v] [-version]');
 		console.log('       -w <wallet> if not specified will look for all wallets on token');
-		console.log('             -zero  only show zero balances for wallet specified');
-		console.log('       -t <token>  if not specified look for all tokens in given wallet');
-		console.log('             -zero  only show wallet with 0 balance ready for airdrop');
-		console.log('       -ex <wallet> 0.0.XXXX,0.0.YYYY to exclude wallets from display');
-		console.log('       -threshold   minimum ownership [default: 1]');
-		console.log('       -r          show token royalties');
-		console.log('       -s <serials> check wallets onwning specified serials');
-		console.log('                    (comma seperated or - for range e.g. 2,5,10 or 1-10)');
-		console.log('       -audit      a simple token ownership audit output - saves to file');
-		console.log('       -auditserials  a simple *serials* ownership audit output - saves to file');
-		console.log('       -hodl       used with auditserials to get hodl data per serial');
-		console.log('       -epoch XXXX used with hodl to exclude anyoe buying post date/time');
-		console.log('       -listed     statistics on listed supply for a token');
-		console.log('       		e.g. node checkOwnership.mjs -t 0.0.XXXX -listed');
-		console.log('       -v          verbose [debug]');
-		console.log('       -version    displays version number and exits');
+		console.log('          -zero  		only show zero balances for wallet specified');
+		console.log('          -creator 0.0.ZZZZ	only show wallet with non-zero balance');
+		console.log('       -t <token>		if not specified look for all tokens in given wallet');
+		console.log('             -zero 	only show wallet with 0 balance ready for airdrop');
+		console.log('       -ex <wallet>	0.0.XXXX,0.0.YYYY to exclude wallets from display');
+		console.log('       -threshold		minimum ownership [default: 1]');
+		console.log('       -r				show token royalties');
+		console.log('       -s <serials>	check wallets onwning specified serials');
+		console.log('              			(comma seperated or - for range e.g. 2,5,10 or 1-10)');
+		console.log('       -audit			a simple token ownership audit output - saves to file');
+		console.log('       -auditserials	a simple *serials* ownership audit output - saves to file');
+		console.log('       -hodl			used with auditserials to get hodl data per serial');
+		console.log('       -epoch XXXX		used with hodl to exclude anyoe buying post date/time');
+		console.log('       -listed			statistics on listed supply for a token');
+		console.log('						e.g. node checkOwnership.mjs -t 0.0.XXXX -listed');
+		console.log('       -v				verbose [debug]');
+		console.log('       -version		displays version number and exits');
 		return;
 	}
 
@@ -566,6 +565,7 @@ async function main() {
 
 	if (tokenId === undefined) {
 		wholeWallet = true;
+		if (getArgFlag('creator')) creatorAccountOnly = getArg('creator');
 	}
 
 	if (walletId === undefined) {
@@ -634,13 +634,13 @@ async function main() {
 	const getListedStats = getArgFlag('listed');
 
 
-	let returnArray;
+	let tokenDetails;
 	let nftOwnerMap;
 	let auditCSV;
 	// overal stats
 	let wholeWalletTotal = 0;
 	let wholeWalletUnique = 0;
-	let wholeWalletZeroCollections = 0;
+	// let wholeWalletZeroCollections = 0;
 
 	if (auditOutput) { auditCSV = 'Wallet,Token,Owned,Timestamp'; }
 	if (auditSerialsOutput) {
@@ -655,11 +655,13 @@ async function main() {
 
 		tokenId = tokenList[i];
 		if (verbose) {console.log(`processing token: ${tokenId}`);}
-		returnArray = await getTokenDetails(tokenId, verbose);
+		tokenDetails = await getTokenDetails(tokenId, verbose);
+
+		if (creatorAccountOnly && tokenDetails.tsryAcc != creatorAccountOnly) continue;
 
 		if (!wholeWallet && getZeroFlag) {
 			// output a list of accounts with the token associated but 0 balance
-			getAssociatedButZeroAccounts(tokenId, excludeList, returnArray[5]).then((acctList) => {
+			getAssociatedButZeroAccounts(tokenId, excludeList, tokenDetails.tsryAcc).then((acctList) => {
 				console.log('Airdrop script format');
 				for (let a = 0; a < acctList.length; a++) {
 					console.log(`${acctList[a]},${tokenId},1,0`);
@@ -667,26 +669,26 @@ async function main() {
 			});
 			return;
 		}
-		else if (returnArray[1] == 'FUNGIBLE_COMMON') {
+		else if (tokenDetails.tokenType == 'FUNGIBLE_COMMON') {
 			if (serialsCheck) {
 				console.log(`**CAN ONLY CHECK SERIALS for type NFT - ${tokenId} is of type FUNGIBLE_COMMON`);
 				return;
 			}
 			// gomint API assumed
-			nftOwnerMap = await getSerialFungibleCommonOwnership(tokenId, returnArray[3], returnArray[4], walletId, excludeList, verbose);
+			nftOwnerMap = await getSerialFungibleCommonOwnership(tokenId, tokenDetails.name, tokenDetails.decimal, walletId, excludeList, verbose);
 		}
 		else if (auditSerialsOutput) {
-			nftOwnerMap = await getSerialNFTOwnershipForAudit(tokenId, serialsList, returnArray[6], excludeList, hodl, epoch, verbose, walletId);
+			nftOwnerMap = await getSerialNFTOwnershipForAudit(tokenId, serialsList, tokenDetails.tsryAcc, excludeList, hodl, epoch, verbose, walletId);
 		}
 		else if (getListedStats) {
-			const [unlistedCount, listedCount, totalNFts] = await getNFTListingStats(tokenId, returnArray[6]);
+			const [unlistedCount, listedCount, totalNFts] = await getNFTListingStats(tokenId, tokenDetails.tsryAcc);
 			const percListed = (listedCount / (unlistedCount + listedCount)) * 100;
 			const mintedPerc = ((unlistedCount + listedCount) / totalNFts) * 100;
 			console.log(`Stats for ${tokenId}:\n${parseFloat(percListed).toFixed(3) + '%'}/${listedCount} listed of ${unlistedCount + listedCount} minted supply.\n${totalNFts} collection size (minted ${parseFloat(mintedPerc).toFixed(3) + '%'})`);
 			continue;
 		}
 		else {
-			nftOwnerMap = await getSerialNFTOwnership(tokenId, walletId, returnArray[3], serialsList, returnArray[5], returnArray[6], excludeList, verbose);
+			nftOwnerMap = await getSerialNFTOwnership(tokenId, walletId, tokenDetails.name, serialsList, tokenDetails.royaltiesStr, tokenDetails.tsryAcc, excludeList, verbose);
 		}
 
 		let uniqueWallets = 0;
@@ -728,7 +730,7 @@ async function main() {
 							console.log(`Account ${value[2]} owns ${value[0].toLocaleString('en-US')} -> ${value[1]} [${value[5]} listed / spender authorised]`);
 						}
 					}
-					else if (wholeWallet) {wholeWalletZeroCollections++;}
+					// else if (wholeWallet) {wholeWalletZeroCollections++;}
 				}
 			});
 		}
@@ -738,7 +740,9 @@ async function main() {
 	}
 
 	if (wholeWallet) {
-		console.log(`Found ${wholeWalletTotal} tokens [unique collections -> ${wholeWalletUnique} & zero owned but associated transactions ${wholeWalletZeroCollections} for ${walletId}`);
+		console.log(`Found ${wholeWalletTotal} tokens [unique collections -> ${wholeWalletUnique}] for ${walletId}`);
+		// TODO: if mirror node API allows old balances method add this back
+		// & zero owned but associated transactions ${wholeWalletZeroCollections} );
 	}
 
 	if (auditOutput || auditSerialsOutput) {
@@ -748,6 +752,19 @@ async function main() {
 		});
 	}
 
+}
+
+class TokenDetails {
+	constructor(tokenId, supply, tokenType, symbol, name, decimal, royaltiesStr, tsryAcc) {
+		this.tokenId = tokenId;
+		this.tokenType = tokenType;
+		this.supply = supply;
+		this.symbol = symbol;
+		this.name = name;
+		this.decimal = decimal;
+		this.royaltiesStr = royaltiesStr;
+		this.tsryAcc = tsryAcc;
+	}
 }
 
 main();

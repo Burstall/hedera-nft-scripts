@@ -232,7 +232,7 @@ async function main() {
 	const timeNow = new Date();
 	const timestamp = timeNow.toISOString().split('.')[0].replaceAll(':', '-');
 	if (outputAsFile) {
-		fs.writeFile(`./${tokenId}_Transactions_${timestamp}.tsv`, outputStr, () => {
+		fs.writeFileSync(`./${tokenId}_Transactions_${timestamp}.tsv`, outputStr, () => {
 			console.log('Transaction File created');
 		});
 	}
