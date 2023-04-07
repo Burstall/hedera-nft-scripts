@@ -203,7 +203,7 @@ async function main() {
 	await writeProgress(fileToProcess, pinnedMetadataObj);
 
 	// check enough space on token to mint
-	if ((maxSupply - totSupply - plannedMint) >= 0) {
+	if (maxSupply == 0 || (maxSupply - totSupply - plannedMint) >= 0) {
 		console.log('Precheck passed - enough space on token to mint');
 	}
 	else {

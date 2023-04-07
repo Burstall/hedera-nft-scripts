@@ -273,11 +273,11 @@ This is 'step 3' (see above) -> NFT minting script if you have already pinned th
 Usage: node mintNFTfromPinnedMetadata.js -process <file>
        -process json file to read in and process
                 File format: 
-        { 
+        [ 
                 "ipfs://XXXX/metadata.json", 
                 "ipfs://YYYY/metadata.json", 
                 "ipfs://ZZZZ/metadata.json"  
-        }
+        ]
 or (output format of this script that includes tracking)
 
         {
