@@ -180,7 +180,9 @@ async function main() {
 						'\nDesc:\t' + nftDesc +
 						'\nTreasury:\t' + tsry +
 						'\nAuto Renew:\t' + autoRenew +
-						'\nMax Supply:\t' + nftMaxSupply;
+						'\nMax Supply:\t';
+
+	tokenDetails += nftMaxSupply ? nftMaxSupply : 'UNLIMITED';
 
 	if (royaltiesObj.length > 0) tokenDetails += royaltiesAsString;
 	else tokenDetails += '\nNO ROYALTIES SET\n';
@@ -217,12 +219,18 @@ async function main() {
 		.setTokenSymbol(nftSymbol)
 		.setTokenMemo(nftDesc)
 		.setInitialSupply(0)
-		.setMaxSupply(nftMaxSupply)
-		.setSupplyType(TokenSupplyType.Finite)
 		.setTreasuryAccountId(AccountId.fromString(tsry))
 		.setAutoRenewAccountId(AccountId.fromString(autoRenew))
 		.setSupplyKey(keyMap.get(SUPPLY_KEY))
 		.setMaxTransactionFee(new Hbar(maxHbarFee, HbarUnit.Hbar));
+
+	if (nftMaxSupply) {
+		tokenCreateTx.setMaxSupply(nftMaxSupply)
+			.setSupplyType(TokenSupplyType.Finite);
+	}
+	else {
+		tokenCreateTx.setSupplyType(TokenSupplyType.Infinite);
+	}
 
 	if (addAdmin) {
 		tokenCreateTx.setAdminKey(keyMap.get(ADMIN_KEY));
