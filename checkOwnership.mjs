@@ -8,8 +8,9 @@ const zuseEscrow = '0.0.690356';
 const hashGuildEscrow = '0.0.1007535';
 const zuseLaunchpad = '0.0.705448';
 const hashAxisMint = '0.0.580000';
+const sentient = '0.0.1064038';
 
-const version = '0.3.0';
+const version = '0.3.1';
 
 let creatorAccountOnly = null;
 
@@ -61,7 +62,7 @@ async function getTokenDetails(tokenId, verbose) {
 	const type = u.type;
 	const symbol = u.symbol || '';
 	const name = u.name || '';
-	const decimal = u.decimal || 0;
+	const decimal = u.decimals || 0;
 	const tsryAcc = u.treasury_account_id;
 	const customFees = u.custom_fees;
 
@@ -152,6 +153,7 @@ async function getSerialNFTOwnership(tokenId, walletId = null, name, serialsList
 			else if (nftOwner == tsryAcc) {nftAcctString = `**TSRY**${tsryAcc}**TSRY**`; }
 			else if (nftOwner == hashGuildEscrow) {nftAcctString = `HashGuild ESCROW (${hashGuildEscrow})`;}
 			else if (nftOwner == hashAxisMint) {nftAcctString = `HASHAXIS MINT (${hashAxisMint})`;}
+			else if (nftOwner == sentient) {nftAcctString = `Sentient (${sentient})`;}
 			let currentOwnership = nftOwnerMap.get(nftOwner) || [];
 
 			if (currentOwnership.length == 0) {
@@ -674,7 +676,6 @@ async function main() {
 				console.log(`**CAN ONLY CHECK SERIALS for type NFT - ${tokenId} is of type FUNGIBLE_COMMON`);
 				return;
 			}
-			// gomint API assumed
 			nftOwnerMap = await getSerialFungibleCommonOwnership(tokenId, tokenDetails.name, tokenDetails.decimal, walletId, excludeList, verbose);
 		}
 		else if (auditSerialsOutput) {
