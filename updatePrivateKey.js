@@ -125,39 +125,7 @@ async function main() {
 		newKey = await mnemonic.toEd25519PrivateKey();
 	}
 
-	if (!getArgFlag('test')) {
-		const proceed = readlineSync.keyInYNStrict('Do you want to proceed with changing the key on the account? (Last chance to cancel!)');
-		if (!proceed) {
-			console.log('Aborting...');
-			exit(1);
-		}
-
-		console.log('Updating account', acctToChange, 'with new Key...');
-		// Create the transaction to update the key on the account
-		const transaction = new AccountUpdateTransaction()
-			.setAccountId(acctToChange)
-			.setKey(newKey)
-			.freezeWith(client);
-
-		// Sign the transaction with the old key and new key
-		const signTx = await (await transaction.sign(oldKey)).sign(newKey);
-
-		// execute the signed transaction
-		const txResponse = await signTx.execute(client);
-
-		// Request the receipt of the transaction
-		const receipt = await txResponse.getReceipt(client);
-
-		// Get the transaction consensus status
-		const transactionStatus = receipt.status;
-
-		console.log('The transaction consensus status is ' + transactionStatus.toString());
-
-	}
-	else {
-		console.log('**TEST MODE** skipping interaction with Hedera network -- **NO KEYS CHANGED**');
-	}
-
+	// Save the new key to file
 	const outputString = 'Account:\n'
 							+ acctToChange
 							+ '\nMnemonic:\n'
@@ -202,6 +170,39 @@ async function main() {
 	}
 	else {
 		console.log(outputString);
+	}
+
+	if (!getArgFlag('test')) {
+		const proceed = readlineSync.keyInYNStrict('Do you want to proceed with changing the key on the account? (Last chance to cancel!)');
+		if (!proceed) {
+			console.log('Aborting...');
+			exit(1);
+		}
+
+		console.log('Updating account', acctToChange, 'with new Key...');
+		// Create the transaction to update the key on the account
+		const transaction = new AccountUpdateTransaction()
+			.setAccountId(acctToChange)
+			.setKey(newKey)
+			.freezeWith(client);
+
+		// Sign the transaction with the old key and new key
+		const signTx = await (await transaction.sign(oldKey)).sign(newKey);
+
+		// execute the signed transaction
+		const txResponse = await signTx.execute(client);
+
+		// Request the receipt of the transaction
+		const receipt = await txResponse.getReceipt(client);
+
+		// Get the transaction consensus status
+		const transactionStatus = receipt.status;
+
+		console.log('The transaction consensus status is ' + transactionStatus.toString());
+
+	}
+	else {
+		console.log('**TEST MODE** skipping interaction with Hedera network -- **NO KEYS CHANGED**');
 	}
 }
 
