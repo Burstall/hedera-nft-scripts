@@ -6,6 +6,8 @@ const {
 	TokenBurnTransaction,
 } = require('@hashgraph/sdk');
 
+const readlineSync = require('readline-sync');
+
 // Configure accounts and client, and generate needed keys
 const operatorId = AccountId.fromString(process.env.MY_ACCOUNT_ID);
 const operatorKey = PrivateKey.fromString(process.env.MY_PRIVATE_KEY);
@@ -88,6 +90,15 @@ async function main() {
 	}
 	else {
 		console.log('ERROR: Must specify either MAIN or TEST as environment in .env file');
+		return;
+	}
+
+	console.log(`Burning ${serialsList.length} -> Serials to burn:`, serialsList);
+
+	const execute = readlineSync.keyInYNStrict('Do wish to execute the burn?');
+
+	if (!execute) {
+		console.log('Exiting without burning');
 		return;
 	}
 
