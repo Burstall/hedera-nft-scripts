@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
+import readlineSync from 'readline-sync';
 dotenv.config();
-import { AccountId, PrivateKey, Client, TokenCreateTransaction, TokenType, TokenSupplyType, AccountBalanceQuery } from '@hashgraph/sdk';
+import { AccountId, PrivateKey, Client, TokenCreateTransaction, TokenType, TokenSupplyType, AccountBalanceQuery, Hbar } from '@hashgraph/sdk';
 
 // Configure accounts and client, and generate needed keys
 const myAcctID = AccountId.fromString(process.env.MY_ACCOUNT_ID);
@@ -16,6 +17,7 @@ const adminKey = PrivateKey.generate();
 const pauseKey = PrivateKey.generate();
 const freezeKey = PrivateKey.generate();
 const wipeKey = PrivateKey.generate();
+const feeScheduleKey = PrivateKey.generate();
 
 function getArg(arg) {
 	const customIndex = process.argv.indexOf(`-${arg}`);
@@ -47,6 +49,9 @@ async function main() {
 		console.log('       -adminkey	optional - add an admin key');
 		console.log('       -freezekey	optional - add a freeze key');
 		console.log('       -pausekey	optional - add an pause key');
+		console.log('       -wipekey    optional - add a wip key');
+		console.log('       -feekey		optional - add a fee schedule key');
+		console.log('       -supplykey	optional - add a supply key (without no further minting can occur)');
 		console.log('       -maxsupply 	optional - if used please provide an integer, if omitted then infinite supply assumed');
 		return;
 	}
@@ -71,7 +76,8 @@ async function main() {
 		.setTokenType(TokenType.FungibleCommon)
 		.setDecimals(tokenDecimal)
 		.setInitialSupply(tokenInitalSupply)
-		.setTreasuryAccountId(myAcctID);
+		.setTreasuryAccountId(myAcctID)
+		.setMaxTransactionFee(new Hbar(100));
 
 	if (getArgFlag('maxsupply')) {
 		tokenCreateTx.setSupplyType(TokenSupplyType.Finite);
@@ -94,17 +100,40 @@ async function main() {
 	const usePause = getArgFlag('pausekey');
 	const useAdmin = getArgFlag('adminkey');
 	const useWipe = getArgFlag('wipekey');
+	const useFee = getArgFlag('feekey');
+	const useSupply = getArgFlag('supplykey');
 
 	if (useFreeze) tokenCreateTx.setFreezeKey(freezeKey);
 	if (usePause) tokenCreateTx.setPauseKey(pauseKey);
 	if (useAdmin) tokenCreateTx.setAdminKey(adminKey);
 	if (useWipe) tokenCreateTx.setWipeKey(wipeKey);
+	if (useFee) tokenCreateTx.setFeeScheduleKey(feeScheduleKey);
+	if (useSupply) tokenCreateTx.setSupplyKey(supplyKey);
 
-	tokenCreateTx
-		.setSupplyKey(supplyKey)
-		.freezeWith(client);
+	tokenCreateTx.freezeWith(client);
 
 	const tokenCreateSign = await tokenCreateTx.sign(myAcctPK);
+
+	console.log('Creating token...');
+	console.log(`- Token Name: ${tokenName}`);
+	console.log(`- Token Symbol: ${tokenSymbol}`);
+	console.log(`- Token Decimals: ${tokenDecimal}`);
+	console.log(`- Token Initial Supply: ${tokenInitalSupply}`);
+	console.log(`- Max Supply: ${getArg('maxsupply')}`);
+	console.log(`- WipeKey: ${useWipe}`);
+	console.log(`- FreezeKey: ${useFreeze}`);
+	console.log(`- PauseKey: ${usePause}`);
+	console.log(`- AdminKey: ${useAdmin}`);
+	console.log(`- FeeScheduleKey: ${useFee}`);
+	console.log(`- SupplyKey: ${useSupply}`);
+
+	const execute = readlineSync.keyInYNStrict('Do wish to execute the token creation?');
+
+	if (!execute) {
+		console.log('Exiting without creating token');
+		return;
+	}
+
 	if (useAdmin) await tokenCreateSign.sign(adminKey);
 	const tokenCreateSubmit = await tokenCreateSign.execute(client);
 	const tokenCreateRx = await tokenCreateSubmit.getReceipt(client);
@@ -115,6 +144,7 @@ async function main() {
 	if (usePause) console.log(`Pause Key: ${pauseKey}`);
 	if (useFreeze) console.log(`Freeze Key: ${freezeKey}`);
 	if (useWipe) console.log(`Wipe Key: ${wipeKey}`);
+	if (useFee) console.log(`Fee Schedule Key: ${feeScheduleKey}`);
 
 	// BALANCE CHECK
 	const balanceCheckTx = await new AccountBalanceQuery().setAccountId(myAcctID).execute(client);
