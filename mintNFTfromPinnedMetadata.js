@@ -6,6 +6,7 @@ const {
 	TokenMintTransaction,
 } = require('@hashgraph/sdk');
 const fetch = require('cross-fetch');
+const path = require('path');
 const readlineSync = require('readline-sync');
 const fs = require('fs');
 
@@ -121,11 +122,14 @@ async function main() {
 		process.exit(0);
 	}
 
-	const fileToProcess = getArg('process');
+	const fileToProcess = path.resolve(getArg('process'));
 
 	if (!fileToProcess) {
 		console.log('ERROR: must specifiy file to process - EXITING');
 		process.exit(1);
+	}
+	else {
+		console.log('Processing file:', fileToProcess);
 	}
 
 	// Create our connection to the Hedera network
@@ -299,9 +303,10 @@ async function main() {
 	}
 }
 
-async function writeProgress(filename, pinnedMetadataObj) {
+async function writeProgress(filepath, pinnedMetadataObj) {
 	// write back out the updated file
-	const saveFilename = 'output_' + env + '_' + filename.replace(/^\.\\/, '');
+	const filename = path.basename(filepath);
+	const saveFilename = path.join(path.dirname(filepath), 'output_' + env + '_' + filename.replace(/^\.\\/, ''));
 	const outputStr = JSON.stringify(pinnedMetadataObj, null, 4);
 	fs.writeFile(saveFilename, outputStr, { flag: 'w' }, function(err) {
 		if (err) {return console.error(err);}
