@@ -94,9 +94,9 @@ async function main() {
 	}
 
 
-	const summaryAttribs = new Array(attribIndex.size).fill('N/A');
-
 	for (const n in nftExportJSON) {
+		const summaryAttribs = new Array(attribIndex.size).fill('N/A');
+
 		const nft = nftExportJSON[n];
 
 		const attribs = nft.attributes;
