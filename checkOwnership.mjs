@@ -286,7 +286,36 @@ async function getNFTListingStats(tokenId, tsryAct, verbose = false) {
 	return [unlistedCount, listedCount, totalNFts];
 }
 
+async function getApprovedForAll(owner) {
+	let url = `https://mainnet-public.mirrornode.hedera.com/api/v1/accounts/${owner}/allowances/nfts?limit=100`;
+
+	const tokenSpenderMap = new Map();
+
+	while (url) {
+		const json = await fetchJson(url);
+		if (json == null) {
+			console.log('FATAL ERROR: no NFTs found', url);
+			// unlikely to get here but a sensible default
+			return;
+		}
+		const allowances = json.allowances;
+
+		for (let n = 0; n < allowances.length; n++) {
+			const value = allowances[n];
+			if (value.approved_for_all) {
+				tokenSpenderMap.set(value.token_id, value.spender);
+			}
+		}
+
+		url = json.links.next;
+	}
+
+	return tokenSpenderMap;
+}
+
 async function getSerialNFTOwnershipForAudit(tokenId, serialsList, tsryAct, excludeList, hodl, epoch, verbose, walletId) {
+
+	const getApprovedForAllMap = new Map();
 
 	const nftOwnerMap = [];
 
@@ -317,6 +346,13 @@ async function getSerialNFTOwnershipForAudit(tokenId, serialsList, tsryAct, excl
 
 			if (value.deleted) continue;
 			let nftOwner = value.account_id;
+
+			// check if we have the approved for all for this nftOwner
+			if (!getApprovedForAllMap.has(nftOwner)) {
+				const approvedForAllMap = await getApprovedForAll(nftOwner);
+				getApprovedForAllMap.set(nftOwner, approvedForAllMap);
+			}
+
 			if (excludeList.includes(nftOwner)) {
 				continue;
 			}
@@ -330,9 +366,19 @@ async function getSerialNFTOwnershipForAudit(tokenId, serialsList, tsryAct, excl
 
 			let spender = value.spender;
 
+			if (!spender) {
+				// check if we have the approved for all for this nftOwner
+				const approvedForAllMap = getApprovedForAllMap.get(nftOwner);
+				if (approvedForAllMap) {
+					spender = approvedForAllMap.get(tokenId);
+				}
+			}
+
 			if (spender == zuseEscrow) {spender = 'ZUSE LISTING';}
 			else if (spender == hashGuildEscrow) {spender = 'HASHGUILD LISTING';}
 			else if (spender == hashAxisMint) {spender = 'HASHAXIS';}
+			else if (spender == tsryAct) {spender = 'MINT/TREASURY';}
+			else if (spender == sentient) {spender = 'SENTX';}
 
 			if (hodl) {
 				// also get the HODL date
